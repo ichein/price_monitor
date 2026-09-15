@@ -5,7 +5,7 @@ monitor-precios/
 │   ├── store_base.py        # Clase abstracta StoreScraper
 │   ├── scheduler.py         # Lógica de horarios aleatorios / pesos
 │   ├── storage.py           # Leer/escribir JSON, historial de precios
-│   └── notifier.py          # Envío de avisos (consola, Telegram, email...)
+│   └── notifier.py          # Envío de avisos (consola, Telegram, email, popups...)
 ├── stores/
 │   ├── steam.py             # Implementación concreta para Steam
 │   ├── amazon.py            # (v2, vacío por ahora)
