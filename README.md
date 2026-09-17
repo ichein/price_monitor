@@ -1,5 +1,6 @@
 # price_monitor
 
+```text
 price_monitor/
 ├── core/
 │   ├── store_base.py        # Clase abstracta StoreScraper
@@ -12,38 +13,30 @@ price_monitor/
 │   └── mercadolibre.py      # (v2, vacío por ahora)
 ├── data/
 │   ├── watchlist.json       # Lista de productos que deben vigilarse
-│   ├── user_data.json       # Configuración de Telegram, correo y popups
-│   └── history/
-│       └── README.md        # Descripción del historial de precios
+│   └── user_data.json       # Configuración de Telegram, correo y popups
 ├── style/
 │   ├── popup.qss            # Estilos visuales de las ventanas emergentes
 │   └── visual_main.qss      # Hoja de estilos para la interfaz visual de la v2
-├── config.json              # Configuración general del monitor
+├── store_config.json        # Configuración de las tiendas disponibles
 ├── main.py                  # Punto de entrada y coordinación de la aplicación
 ├── visual_main.py           # Capa de personalización y manejo visual de main.py para la v2
 └── README.md                # Documentación y estructura del proyecto
+```
 
 ## Checklist
-
 
 - [x] `core/store_base.py`
 - [ ] `core/scheduler.py`
 - [ ] `core/storage.py`
 - [x] `core/notifier.py`
-
 - [ ] `stores/steam.py`
 - [ ] `stores/amazon.py`
 - [ ] `stores/mercadolibre.py`
-
 - [ ] `data/watchlist.json`
 - [ ] `data/user_data.json`
-- [ ] `data/history/README.md`
-
 - [ ] `style/popup.qss`
 - [ ] `style/visual_main.qss`
-- [ ] `config.json`
-
-
+- [ ] `store_config.json`
 - [ ] `main.py`
 - [ ] `visual_main.py`
 - [ ] `README.md`

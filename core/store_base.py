@@ -1,7 +1,7 @@
 # Nota: Define la clase abstracta base para los scrapers de tiendas.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import optional, List
+from typing import Optional
 from datetime import datetime, timezone
 
 class error(Exception):
@@ -11,15 +11,15 @@ class error(Exception):
 @dataclass
 class resultado_precio:
     tienda: str
-    id_producto: optional[str]
+    id_producto: Optional[str]
     id_producto_interno: str
     titulo: str
     precio_actual: float
-    precio_anterior: optional[float]
-    precio_original: optional[float]
+    precio_anterior: Optional[float]
+    precio_original: Optional[float]
     divisa: str
     oferta: bool
-    descuento: optional[float]
+    descuento: Optional[float]
     url: str
     timestamp: str #ISO 8601
     disponible: bool #False si no esta disponible (por cualquier motivo)
