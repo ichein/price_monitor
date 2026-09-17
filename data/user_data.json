@@ -1,0 +1,23 @@
+{
+    "telegram_config": {
+        "telegram_activado": false,
+        "token": null,
+        "chat_id": null
+    },
+    "correo_config": {
+        "correo_activado": false,
+        "correo_remitente": null,
+        "correo_receptor": null,
+        "contraseña": null
+    },
+    "popup_config": {
+        "popup_activado": false,
+        "tiempo_entrada": 300,
+        "tiempo_salida": 300,
+        "radio_superior_izquierdo": 10,
+        "radio_superior_derecho": 0,
+        "radio_inferior_izquierdo": 10,
+        "radio_inferior_derecho": 0,
+        "separacion_popups": 99
+    }
+}
