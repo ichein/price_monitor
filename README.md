@@ -29,7 +29,7 @@ price_monitor/
 - [ ] `core/store_base.py`
 - [ ] `core/scheduler.py`
 - [ ] `core/storage.py`
-- [ ] `core/notifier.py`
+- [x] `core/notifier.py`
 
 - [ ] `stores/steam.py`
 - [ ] `stores/amazon.py`
