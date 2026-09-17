@@ -1,0 +1,49 @@
+QDialog {
+    background-color: #1e1e1e;
+    border: none;
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+
+QLabel {
+    color: rgb(245, 230, 200);
+    font-size: 12px;
+    qproperty-alignment: AlignCenter;
+    border: none;
+    margin: 0px 8px 0px 8px;
+}
+
+QPushButton {
+    background-color: #d64a4a;
+    border: none;
+    border-radius: 0px;
+    color: rgb(255, 255, 255);
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 42px;
+    max-width: 42px;
+    min-height: 100%;
+    max-height: 100%;
+    margin: 0px;
+    padding: 0px;
+}
+
+QPushButton:hover {
+    background-color: #e65d5d;
+    color: rgb(255, 255, 255);
+}
+
+QVBoxLayout {
+    spacing: 0px;
+    margin: 0px;
+}
+
+QHBoxLayout {
+    spacing: 0px;
+    margin: 0px;
+}
+
+QDialog > QHBoxLayout > QLabel {
+    border-right: 1px solid rgba(245, 230, 200, 0.45);
+    padding-right: 8px;
+}
