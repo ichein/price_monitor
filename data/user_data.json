@@ -1,8 +1,8 @@
 {
     "telegram_config": {
         "telegram_activado": false,
-        "token": null,
-        "chat_id": null
+        "token": "111",
+        "chat_id": "1332"
     },
     "correo_config": {
         "correo_activado": false,

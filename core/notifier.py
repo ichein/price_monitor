@@ -240,3 +240,4 @@ def limpiar_datos():
             shutil.rmtree(directorio_cache)
     print("Datos y cache de Python limpiados correctamente.")
 
+limpiar_datos()
