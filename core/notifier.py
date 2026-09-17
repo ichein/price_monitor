@@ -239,5 +239,3 @@ def limpiar_datos():
         if directorio_cache.is_dir():
             shutil.rmtree(directorio_cache)
     print("Datos y cache de Python limpiados correctamente.")
-
-limpiar_datos()

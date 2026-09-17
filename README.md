@@ -26,7 +26,7 @@ price_monitor/
 ## Checklist
 
 
-- [ ] `core/store_base.py`
+- [x] `core/store_base.py`
 - [ ] `core/scheduler.py`
 - [ ] `core/storage.py`
 - [x] `core/notifier.py`
