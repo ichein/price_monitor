@@ -1,8 +1,10 @@
 QDialog {
     background-color: #1e1e1e;
     border: none;
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
+    border-top-left-radius: __RADIO_SUPERIOR_IZQUIERDO__;
+    border-top-right-radius: __RADIO_SUPERIOR_DERECHO__;
+    border-bottom-left-radius: __RADIO_INFERIOR_IZQUIERDO__;
+    border-bottom-right-radius: __RADIO_INFERIOR_DERECHO__;
 }
 
 QLabel {
