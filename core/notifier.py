@@ -1,4 +1,3 @@
-# Nota: Envía avisos por consola, Telegram, correo o ventana emergente.
 import sys
 import json
 import requests
@@ -8,75 +7,52 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 try:
-    from .extras.recode import y_or_n, modificar_json, limpiar_datos, input_con_timeout
+    from .extras.recode import modificar_json
 except ImportError:
-    from extras.recode import y_or_n, modificar_json, limpiar_datos, input_con_timeout
-
+    from extras.recode import modificar_json
 with open("data/user_data.json", "r") as archivo:
     config = json.load(archivo)
-
-
-# config de la notificación por telegram
-
 bot_token = config["telegram_config"].get("token")
 chat_id = config["telegram_config"].get("chat_id")
-
-
-# config de la notificación por correo
-#       solo admite gmail
 correo_config = config.setdefault("correo_config", {})
 correo_receptor = correo_config.get("correo_receptor")
 correo_remitente = correo_config.get("correo_remitente")
 contraseña = correo_config.get("contraseña")
-
-# Configuración de la ventana emergente
-TIEMPO_ENTRADA = config["popup_config"]["tiempo_entrada"]
-TIEMPO_SALIDA = config["popup_config"]["tiempo_salida"]
-RADIO_SUPERIOR_IZQUIERDO = config["popup_config"]["radio_superior_izquierdo"]
-RADIO_SUPERIOR_DERECHO = config["popup_config"]["radio_superior_derecho"]
-RADIO_INFERIOR_IZQUIERDO = config["popup_config"]["radio_inferior_izquierdo"]
-RADIO_INFERIOR_DERECHO = config["popup_config"]["radio_inferior_derecho"]
-SEPARACION_POPUPS = config["popup_config"]["separacion_popups"]
-
+popup_config = config["popup_config"]
+TIEMPO_ENTRADA = popup_config["tiempo_entrada"]
+TIEMPO_SALIDA = popup_config["tiempo_salida"]
+RADIOS = {
+    "__RADIO_SUPERIOR_IZQUIERDO__": popup_config["radio_superior_izquierdo"],
+    "__RADIO_SUPERIOR_DERECHO__": popup_config["radio_superior_derecho"],
+    "__RADIO_INFERIOR_IZQUIERDO__": popup_config["radio_inferior_izquierdo"],
+    "__RADIO_INFERIOR_DERECHO__": popup_config["radio_inferior_derecho"],
+}
+SEPARACION_POPUPS = popup_config["separacion_popups"]
+def _completar_configuracion(seccion, valores_actuales, mensaje):
+    llaves_faltantes = [llave for llave, valor in valores_actuales.items() if valor in ("", None)]
+    if not llaves_faltantes:
+        return valores_actuales
+    print(mensaje)
+    valores_guardados = modificar_json(seccion, llaves_faltantes)
+    if valores_guardados is None:
+        return None
+    return {llave: valores_guardados.get(llave, valor) for llave, valor in valores_actuales.items()}
 
 def comprobar_datos_telegram():
     global bot_token, chat_id
-    if bot_token in ("", None) or chat_id in ("", None):
-        print("La configuración de Telegram no está completa")
-        llaves_faltantes = [
-            llave for llave, valor in (("token", bot_token), ("chat_id", chat_id))
-            if valor in ("", None)
-        ]
-        valores_guardados = modificar_json("telegram_config", llaves_faltantes)
-        if valores_guardados is None:
-            return
-        bot_token = valores_guardados.get("token", bot_token)
-        chat_id = valores_guardados.get("chat_id", chat_id)
-
-
+    valores_actualizados = _completar_configuracion("telegram_config", {"token": bot_token, "chat_id": chat_id}, "La configuración de Telegram no está completa")
+    if valores_actualizados is None:
+        return
+    bot_token = valores_actualizados["token"]
+    chat_id = valores_actualizados["chat_id"]
 def comprobacion_datos_correo():
     global correo_receptor, correo_remitente, contraseña
-    if (
-        correo_receptor in ("", None) or correo_remitente in ("", None) or contraseña in ("", None)):
-        print("La configuración de correo no está completa")
-        llaves_faltantes = [
-            llave for llave, valor in (
-                ("correo_receptor", correo_receptor),
-                ("correo_remitente", correo_remitente),
-                ("contraseña", contraseña),
-            )
-            if valor in ("", None)
-        ]
-        valores_guardados = modificar_json("correo_config", llaves_faltantes)
-        if valores_guardados is None:
-            return
-        correo_receptor = valores_guardados.get("correo_receptor", correo_receptor)
-        correo_remitente = valores_guardados.get("correo_remitente", correo_remitente)
-        contraseña = valores_guardados.get("contraseña", contraseña)
-
-
-# mensaje de telegram
-
+    valores_actualizados = _completar_configuracion("correo_config", {"correo_receptor": correo_receptor, "correo_remitente": correo_remitente, "contraseña": contraseña}, "La configuración de correo no está completa")
+    if valores_actualizados is None:
+        return
+    correo_receptor = valores_actualizados["correo_receptor"]
+    correo_remitente = valores_actualizados["correo_remitente"]
+    contraseña = valores_actualizados["contraseña"]
 def enviar_mensaje_telegram(mensaje: dict):
     comprobar_datos_telegram()
     if not bot_token or not chat_id:
@@ -88,13 +64,12 @@ def enviar_mensaje_telegram(mensaje: dict):
     }
     response = requests.post(url, data=payload)
     return response.status_code == 200
-
-
-# correo de notificación
-
-def enviar_correo(remitente, receptor, asunto, mensaje, contraseña):
+def enviar_correo(remitente, receptor, asunto, mensaje, contraseña_arg):
     comprobacion_datos_correo()
-    if not remitente or not receptor or not asunto or not mensaje or not contraseña:
+    remitente = remitente or correo_remitente
+    receptor = receptor or correo_receptor
+    clave = contraseña_arg or contraseña
+    if not remitente or not receptor or not asunto or not mensaje or not clave:
         return
     msg = MIMEMultipart()
     msg['From'] = remitente
@@ -104,38 +79,48 @@ def enviar_correo(remitente, receptor, asunto, mensaje, contraseña):
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
-        server.login(remitente, contraseña)
+        server.login(remitente, clave)
         server.sendmail(remitente, receptor, msg.as_string())
         server.quit()
         print("Correo enviado correctamente.")
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
-
-# comando a copiar cuando se llama la función enviar_correo
-# enviar_correo(correo_remitente, correo_receptor, mensaje["titulo"], mensaje["mensaje"], contraseña)
-
-
-# pop up de notificación
+def _animar(widget, inicio, fin, duracion, curva, al_terminar=None):
+    animacion = QPropertyAnimation(widget, b"pos")
+    animacion.setDuration(duracion)
+    animacion.setStartValue(inicio)
+    animacion.setEndValue(fin)
+    animacion.setEasingCurve(curva)
+    if al_terminar is not None:
+        animacion.finished.connect(al_terminar)
+    animacion.start()
+    return animacion
 
 class popup(QDialog):
     popups_activos = []
     popups_max = 10
 
     @classmethod
+    def _posicion_pila(cls, indice, ancho, alto):
+        screen = QApplication.primaryScreen()
+        if screen is None:
+            return None
+        geo = screen.availableGeometry()
+        x = geo.right() - ancho - 10
+        y = geo.bottom() - alto - 10 - (indice * SEPARACION_POPUPS)
+        return geo, QPoint(x, y)
+
+    @classmethod
     def _reposicionar_pila(cls):
         if not cls.popups_activos:
             return
-        screen = QApplication.primaryScreen()
-        if screen is None:
-            return
-        geo = screen.availableGeometry()
-        base_x = geo.right() - 250 - 10
-        base_y = geo.bottom() - 100 - 10
         for index, popup_widget in enumerate(cls.popups_activos):
-            y = base_y - (index * SEPARACION_POPUPS)
-            popup_widget.move(base_x, y)
+            posicion = cls._posicion_pila(index, popup_widget.width(), popup_widget.height())
+            if posicion is None:
+                continue
+            _, punto = posicion
+            popup_widget.move(punto)
             popup_widget.raise_()
-
     def __init__(self, mensaje: dict):
         super().__init__()
         self.mensaje = mensaje
@@ -161,22 +146,17 @@ class popup(QDialog):
         self.setFixedSize(250, 100)
         self.popups_activos.append(self)
         self._reposicionar_pila()
-        screen = QApplication.primaryScreen()
-        if screen is not None:
-            geo = screen.availableGeometry()
-            x = geo.right() - self.width() - 10
-            y = geo.bottom() - self.height() - 10 - ((len(self.popups_activos) - 1) * SEPARACION_POPUPS)
-            self.anim_entrada = QPropertyAnimation(self, b"pos")
-            self.anim_entrada.setDuration(TIEMPO_ENTRADA)
-            self.anim_entrada.setStartValue(QPoint(geo.right(), y))
-            self.anim_entrada.setEndValue(QPoint(x, y))
-            self.anim_entrada.setEasingCurve(QEasingCurve.Type.OutCubic)
-            self.anim_entrada.start()
+        posicion = self._posicion_pila(len(self.popups_activos) - 1, self.width(), self.height())
+        if posicion is not None:
+            geo, punto = posicion
+            self.anim_entrada = _animar(
+                self, QPoint(geo.right(), punto.y()), punto,
+                TIEMPO_ENTRADA, QEasingCurve.Type.OutCubic,
+            )
         timer = QTimer(self)
         timer.setSingleShot(True)
         timer.timeout.connect(self.close)
         timer.start(10000)
-
     def closeEvent(self, event):
         if not self._cerrando:
             event.ignore()
@@ -187,56 +167,31 @@ class popup(QDialog):
             if screen is not None:
                 geo = screen.availableGeometry()
                 pos_final = QPoint(geo.right(), pos_actual.y())
-            self.anim_salida = QPropertyAnimation(self, b"pos")
-            self.anim_salida.setDuration(TIEMPO_SALIDA)
-            self.anim_salida.setStartValue(pos_actual)
-            self.anim_salida.setEndValue(pos_final)
-            self.anim_salida.setEasingCurve(QEasingCurve.Type.InCubic)
-            self.anim_salida.finished.connect(self._finalizar_cierre)
-            self.anim_salida.start()
+            self.anim_salida = _animar(
+                self, pos_actual, pos_final,
+                TIEMPO_SALIDA, QEasingCurve.Type.InCubic,
+                self._finalizar_cierre,
+            )
         else:
             event.accept()
-
     def _finalizar_cierre(self):
         if self in self.popups_activos:
             self.popups_activos.remove(self)
             self.__class__._reposicionar_pila()
         self.close()
-
-
 _app = None
-
-
 def _get_app():
-    #Crea (o reutiliza) el QApplication se ejecuta solo cuando se va a mostrar un popup
     global _app
     if _app is None:
         _app = QApplication.instance() or QApplication(sys.argv)
         with open("style/popup.qss", "r") as archivo:
             estilo = archivo.read()
-        _app.setStyleSheet(
-            estilo
-            .replace("__RADIO_SUPERIOR_IZQUIERDO__", f"{RADIO_SUPERIOR_IZQUIERDO}px")
-            .replace("__RADIO_SUPERIOR_DERECHO__", f"{RADIO_SUPERIOR_DERECHO}px")
-            .replace("__RADIO_INFERIOR_IZQUIERDO__", f"{RADIO_INFERIOR_IZQUIERDO}px")
-            .replace("__RADIO_INFERIOR_DERECHO__", f"{RADIO_INFERIOR_DERECHO}px")
-        )
+        for marcador, radio in RADIOS.items():
+            estilo = estilo.replace(marcador, f"{radio}px")
+        _app.setStyleSheet(estilo)
     return _app
-
-
 def mostrar_popup(mensaje: dict):
-    #Punto de entrada público para disparar un popup de notificación.
-    #mensaje: {"tipo", "titulo", "mensaje"}
     app = _get_app()
     ventana = popup(mensaje)
     ventana.show()
     app.exec()
-
-
-# Prueba rápida — no se ejecuta al importar el módulo
-"""__name__ == "__main__":
-    mostrar_popup({
-        "tipo": "info",
-        "titulo": "Aviso",
-        "mensaje": "Este es un mensaje de prueba.",
-    })"""

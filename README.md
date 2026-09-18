@@ -11,6 +11,7 @@ price_monitor/
 │       └── recode.py        # Funciones auxiliares
 ├── stores/
 │   ├── steam.py             # Implementación concreta para Steam
+    ├── eneba.py             # Implementación concreta para Enaba
 │   ├── amazon.py            # (v2, vacío por ahora)
 │   └── mercadolibre.py      # (v2, vacío por ahora)
 ├── data/
