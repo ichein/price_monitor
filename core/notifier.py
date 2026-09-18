@@ -1,34 +1,35 @@
-#Nota: Envía avisos por consola, Telegram, correo o ventana emergente.
+# Nota: Envía avisos por consola, Telegram, correo o ventana emergente.
 import sys
 import json
-import shutil
 import requests
-from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QDialog, QLabel
 from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QPoint
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from extras.recode import y_or_n, modificar_json, limpiar_datos
+try:
+    from .extras.recode import y_or_n, modificar_json, limpiar_datos, input_con_timeout
+except ImportError:
+    from extras.recode import y_or_n, modificar_json, limpiar_datos, input_con_timeout
 
 with open("data/user_data.json", "r") as archivo:
     config = json.load(archivo)
 
 
-#config de la notificación por telegram
+# config de la notificación por telegram
 
 bot_token = config["telegram_config"].get("token")
 chat_id = config["telegram_config"].get("chat_id")
 
 
-#config de la notificación por correo
+# config de la notificación por correo
 #       solo admite gmail
 correo_config = config.setdefault("correo_config", {})
 correo_receptor = correo_config.get("correo_receptor")
 correo_remitente = correo_config.get("correo_remitente")
 contraseña = correo_config.get("contraseña")
 
-#Configuración de la ventana emergente
+# Configuración de la ventana emergente
 TIEMPO_ENTRADA = config["popup_config"]["tiempo_entrada"]
 TIEMPO_SALIDA = config["popup_config"]["tiempo_salida"]
 RADIO_SUPERIOR_IZQUIERDO = config["popup_config"]["radio_superior_izquierdo"]
@@ -37,48 +38,44 @@ RADIO_INFERIOR_IZQUIERDO = config["popup_config"]["radio_inferior_izquierdo"]
 RADIO_INFERIOR_DERECHO = config["popup_config"]["radio_inferior_derecho"]
 SEPARACION_POPUPS = config["popup_config"]["separacion_popups"]
 
+
 def comprobar_datos_telegram():
-    #pendiente de agregar timeout
     global bot_token, chat_id
     if bot_token in ("", None) or chat_id in ("", None):
         print("La configuración de Telegram no está completa")
-        if bot_token in ("", None):
-            print("El token del bot no está configurado")
-            bot_token = input("token del bot: ")
-        if chat_id in ("", None):
-            print("El ID del chat no está configurado")
-            chat_id = input("ID del chat: ")
-        config["telegram_config"].update({
-            "token": bot_token,
-            "chat_id": chat_id,
-        })
-        with open("data/user_data.json", "w") as archivo:
-            json.dump(config, archivo, indent=4, ensure_ascii=False)
+        llaves_faltantes = [
+            llave for llave, valor in (("token", bot_token), ("chat_id", chat_id))
+            if valor in ("", None)
+        ]
+        valores_guardados = modificar_json("telegram_config", llaves_faltantes)
+        if valores_guardados is None:
+            return
+        bot_token = valores_guardados.get("token", bot_token)
+        chat_id = valores_guardados.get("chat_id", chat_id)
+
 
 def comprobacion_datos_correo():
-    #pendiente de agregar timeout
     global correo_receptor, correo_remitente, contraseña
     if (
         correo_receptor in ("", None) or correo_remitente in ("", None) or contraseña in ("", None)):
         print("La configuración de correo no está completa")
-        if correo_receptor in ("", None):
-            print("El correo receptor no está configurado")
-            correo_receptor = input("correo receptor: ")
-        if correo_remitente in ("", None):
-            print("El correo remitente no está configurado")
-            correo_remitente = input("correo remitente: ")
-        if contraseña in ("", None):
-            print("La contraseña no está configurada")
-            contraseña = input("contraseña: ")
-        config["correo_config"].update({
-            "correo_receptor": correo_receptor,
-            "correo_remitente": correo_remitente,
-            "contraseña": contraseña,
-        })
-        with open("data/user_data.json", "w") as archivo:
-            json.dump(config, archivo, indent=4, ensure_ascii=False)
+        llaves_faltantes = [
+            llave for llave, valor in (
+                ("correo_receptor", correo_receptor),
+                ("correo_remitente", correo_remitente),
+                ("contraseña", contraseña),
+            )
+            if valor in ("", None)
+        ]
+        valores_guardados = modificar_json("correo_config", llaves_faltantes)
+        if valores_guardados is None:
+            return
+        correo_receptor = valores_guardados.get("correo_receptor", correo_receptor)
+        correo_remitente = valores_guardados.get("correo_remitente", correo_remitente)
+        contraseña = valores_guardados.get("contraseña", contraseña)
 
-#mensaje de telegram
+
+# mensaje de telegram
 
 def enviar_mensaje_telegram(mensaje: dict):
     comprobar_datos_telegram()
@@ -87,12 +84,13 @@ def enviar_mensaje_telegram(mensaje: dict):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
         "chat_id": chat_id,
-        "text": f"{mensaje['titulo']} {mensaje['mensaje']}"
+        "text": f"{mensaje['titulo']} {mensaje['mensaje']}",
     }
     response = requests.post(url, data=payload)
     return response.status_code == 200
 
-#correo de notificación
+
+# correo de notificación
 
 def enviar_correo(remitente, receptor, asunto, mensaje, contraseña):
     comprobacion_datos_correo()
@@ -114,13 +112,15 @@ def enviar_correo(remitente, receptor, asunto, mensaje, contraseña):
         print(f"Error al enviar el correo: {e}")
 
 # comando a copiar cuando se llama la función enviar_correo
-#enviar_correo(correo_remitente, correo_receptor, mensaje["titulo"], mensaje["mensaje"], contraseña)
+# enviar_correo(correo_remitente, correo_receptor, mensaje["titulo"], mensaje["mensaje"], contraseña)
+
 
 # pop up de notificación
 
 class popup(QDialog):
     popups_activos = []
     popups_max = 10
+
     @classmethod
     def _reposicionar_pila(cls):
         if not cls.popups_activos:
@@ -135,7 +135,8 @@ class popup(QDialog):
             y = base_y - (index * SEPARACION_POPUPS)
             popup_widget.move(base_x, y)
             popup_widget.raise_()
-    def __init__(self):
+
+    def __init__(self, mensaje: dict):
         super().__init__()
         self.mensaje = mensaje
         self._cerrando = False
@@ -175,6 +176,7 @@ class popup(QDialog):
         timer.setSingleShot(True)
         timer.timeout.connect(self.close)
         timer.start(10000)
+
     def closeEvent(self, event):
         if not self._cerrando:
             event.ignore()
@@ -194,6 +196,7 @@ class popup(QDialog):
             self.anim_salida.start()
         else:
             event.accept()
+
     def _finalizar_cierre(self):
         if self in self.popups_activos:
             self.popups_activos.remove(self)
@@ -203,9 +206,9 @@ class popup(QDialog):
 
 _app = None
 
+
 def _get_app():
-    """crea (o reutiliza) el QApplication nunca se ejecuta al importar el módulo,
-    solo cuando efectivamente se va a mostrar un popup."""
+    #Crea (o reutiliza) el QApplication se ejecuta solo cuando se va a mostrar un popup
     global _app
     if _app is None:
         _app = QApplication.instance() or QApplication(sys.argv)
@@ -220,10 +223,20 @@ def _get_app():
         )
     return _app
 
+
 def mostrar_popup(mensaje: dict):
-    """Punto de entrada público para disparar un popup de notificación.
-    mensaje: {"tipo", "titulo", "mensaje"}"""
+    #Punto de entrada público para disparar un popup de notificación.
+    #mensaje: {"tipo", "titulo", "mensaje"}
     app = _get_app()
     ventana = popup(mensaje)
-    ventana.show
-    app.exec
+    ventana.show()
+    app.exec()
+
+
+# Prueba rápida — no se ejecuta al importar el módulo
+"""__name__ == "__main__":
+    mostrar_popup({
+        "tipo": "info",
+        "titulo": "Aviso",
+        "mensaje": "Este es un mensaje de prueba.",
+    })"""
