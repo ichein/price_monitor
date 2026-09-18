@@ -3,10 +3,17 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime, timezone
+from enum import Enum
 
 class error(Exception):
     """Error genérico al consultar una tienda (red, parseo, producto no encontrado, etc.)"""
     pass
+
+class estado_producto(Enum):
+    DISPONIBLE = "disponible"               # se puede comprar
+    AGOTADO = "agotado"                     # existe, sin stock
+    SIN_PRECIO_REGION = "sin_precio_region" # existe pero no se vende en el cc/región consultada
+    NO_ENCONTRADO = "no_encontrado"         # el id/nombre no existe
 
 @dataclass
 class resultado_precio:
@@ -22,8 +29,7 @@ class resultado_precio:
     descuento: Optional[float]
     url: str
     timestamp: str #ISO 8601
-    disponible: bool #False si no esta disponible (por cualquier motivo)
-    agotado: bool #si este y disponible son False dar un error 
+    estado: estado_producto
 
 class store_scraper(ABC):
     nombre_tienda: str

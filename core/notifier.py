@@ -9,6 +9,7 @@ from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, QPoint
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from extras.recode import y_or_n, modificar_json, limpiar_datos
 
 with open("data/user_data.json", "r") as archivo:
     config = json.load(archivo)
@@ -36,13 +37,8 @@ RADIO_INFERIOR_IZQUIERDO = config["popup_config"]["radio_inferior_izquierdo"]
 RADIO_INFERIOR_DERECHO = config["popup_config"]["radio_inferior_derecho"]
 SEPARACION_POPUPS = config["popup_config"]["separacion_popups"]
 
-mensaje = {
-    "tipo": "info",
-    "titulo": "Aviso",
-    "mensaje": "Este es un mensaje de prueba."
-}
-
 def comprobar_datos_telegram():
+    #pendiente de agregar timeout
     global bot_token, chat_id
     if bot_token in ("", None) or chat_id in ("", None):
         print("La configuración de Telegram no está completa")
@@ -60,6 +56,7 @@ def comprobar_datos_telegram():
             json.dump(config, archivo, indent=4, ensure_ascii=False)
 
 def comprobacion_datos_correo():
+    #pendiente de agregar timeout
     global correo_receptor, correo_remitente, contraseña
     if (
         correo_receptor in ("", None) or correo_remitente in ("", None) or contraseña in ("", None)):
@@ -83,14 +80,14 @@ def comprobacion_datos_correo():
 
 #mensaje de telegram
 
-def enviar_mensaje_telegram(mensaje):
+def enviar_mensaje_telegram(mensaje: dict):
     comprobar_datos_telegram()
     if not bot_token or not chat_id:
         return
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
         "chat_id": chat_id,
-        "text": [mensaje["titulo"] + " " + mensaje["mensaje"]]
+        "text": f"{mensaje['titulo']} {mensaje['mensaje']}"
     }
     response = requests.post(url, data=payload)
     return response.status_code == 200
@@ -140,6 +137,7 @@ class popup(QDialog):
             popup_widget.raise_()
     def __init__(self):
         super().__init__()
+        self.mensaje = mensaje
         self._cerrando = False
         self.setWindowTitle(mensaje["titulo"])
         self.setWindowFlags(
@@ -203,39 +201,29 @@ class popup(QDialog):
         self.close()
 
 
-app = QApplication(sys.argv)
-with open("style/popup.qss", "r") as archivo:
-    estilo = archivo.read()
+_app = None
 
-app.setStyleSheet(
-    estilo
-    .replace("__RADIO_SUPERIOR_IZQUIERDO__", f"{RADIO_SUPERIOR_IZQUIERDO}px")
-    .replace("__RADIO_SUPERIOR_DERECHO__", f"{RADIO_SUPERIOR_DERECHO}px")
-    .replace("__RADIO_INFERIOR_IZQUIERDO__", f"{RADIO_INFERIOR_IZQUIERDO}px")
-    .replace("__RADIO_INFERIOR_DERECHO__", f"{RADIO_INFERIOR_DERECHO}px")
-)
+def _get_app():
+    """crea (o reutiliza) el QApplication nunca se ejecuta al importar el módulo,
+    solo cuando efectivamente se va a mostrar un popup."""
+    global _app
+    if _app is None:
+        _app = QApplication.instance() or QApplication(sys.argv)
+        with open("style/popup.qss", "r") as archivo:
+            estilo = archivo.read()
+        _app.setStyleSheet(
+            estilo
+            .replace("__RADIO_SUPERIOR_IZQUIERDO__", f"{RADIO_SUPERIOR_IZQUIERDO}px")
+            .replace("__RADIO_SUPERIOR_DERECHO__", f"{RADIO_SUPERIOR_DERECHO}px")
+            .replace("__RADIO_INFERIOR_IZQUIERDO__", f"{RADIO_INFERIOR_IZQUIERDO}px")
+            .replace("__RADIO_INFERIOR_DERECHO__", f"{RADIO_INFERIOR_DERECHO}px")
+        )
+    return _app
 
-def limpiar_datos():
-    confirmar = input("¿Deseas limpiar todos los datos? (Y/N): ").strip().lower()
-    if confirmar not in ("y", "yes"):
-        print("Limpieza cancelada.")
-        return
-    config["telegram_config"] = {
-        "telegram_activado": False,
-        "token": None,
-        "chat_id": None,
-    }
-    config["correo_config"] = {
-        "correo_activado": False,
-        "correo_remitente": None,
-        "correo_receptor": None,
-        "contraseña": None,
-    }
-    config.setdefault("popup_config", {})["popup_activado"] = False
-    with open("data/user_data.json", "w", encoding="utf-8") as archivo:
-        json.dump(config, archivo, indent=4, ensure_ascii=False)
-    directorio_proyecto = Path(__file__).resolve().parent.parent
-    for directorio_cache in directorio_proyecto.rglob("__pycache__"):
-        if directorio_cache.is_dir():
-            shutil.rmtree(directorio_cache)
-    print("Datos y cache de Python limpiados correctamente.")
+def mostrar_popup(mensaje: dict):
+    """Punto de entrada público para disparar un popup de notificación.
+    mensaje: {"tipo", "titulo", "mensaje"}"""
+    app = _get_app()
+    ventana = popup(mensaje)
+    ventana.show
+    app.exec
