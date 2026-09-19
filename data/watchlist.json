@@ -1,1 +1,12 @@
-Nota: Guarda la lista de productos que se deben vigilar.
+{
+    "producto_formato": {
+        "tienda": "no one",
+        "nombre_producto": "no one",
+        "id_producto": "0",
+        "id_producto_interno": "0",
+        "umbral_aviso": null,
+        "peso": 0,
+        "activado": false,
+        "favorito": false
+    }
+}

@@ -1,1 +1,20 @@
- Historial de precios
+{
+    "producto_historial_formato": {
+        "tienda": "no one",
+        "nombre_producto": "no one",
+        "id_producto": "0",
+        "id_producto_interno": "0",
+        "historial": [
+            {
+                "fecha": "D/M/Y",
+                "hora": "24h format",
+                "fecha_hora": "ISO 8601",
+                "oferta": false,
+                "precio": "0",
+                "descuento": "0",
+                "moneda": "Mx"
+            }
+        ],
+        "precio_historico": ["moneda", "historico_bajo", "historico_alto"]
+    }
+}

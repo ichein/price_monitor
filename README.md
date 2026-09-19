@@ -11,13 +11,13 @@ price_monitor/
 │       └── recode.py        # Funciones auxiliares
 ├── stores/
 │   ├── steam.py             # Implementación concreta para Steam
-    ├── eneba.py             # Implementación concreta para Enaba
+    ├── eneba.py             # (v2, vacío por ahora)
 │   ├── amazon.py            # (v2, vacío por ahora)
 │   └── mercadolibre.py      # (v2, vacío por ahora)
 ├── data/
 │   ├── watchlist.json       # Lista de productos que deben vigilarse
 │   ├── user_data.json       # Configuración de Telegram, correo y popups
-│   └── history/             # Historial de precios (pendiente de implementar)
+│   └── price_history.json   # Historial de precios
 ├── style/
 │   ├── popup.qss            # Estilos visuales de las ventanas emergentes
 │   └── visual_main.qss      # Hoja de estilos para la interfaz visual
@@ -25,7 +25,8 @@ price_monitor/
 ├── main.py                  # Pendiente: punto de entrada y coordinación de la aplicación
 ├── pruebas.py               # Pruebas aisladas
 ├── visuals/
-│   └── visual_main.py       # Placeholder para la interfaz visual
+│   ├── visual_main.py       # Placeholder para la interfaz visual
+│   └── visual_historial.py  # Interfaz visual del historial
 └── README.md                # Documentación y estructura del proyecto
 ```
 
