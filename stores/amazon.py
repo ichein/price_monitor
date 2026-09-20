@@ -1,1 +1,1 @@
-Nota: Placeholder para una futura implementación del scraper de Amazon.
+Placeholder del scraper de Amazon.

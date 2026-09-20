@@ -1,1 +1,1 @@
-Nota: Gestiona los horarios aleatorios y los pesos de prioridad para cada revisión.
+Gestiona horarios aleatorios y pesos de prioridad.

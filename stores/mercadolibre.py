@@ -1,1 +1,1 @@
-Nota: Placeholder para una futura implementación del scraper de Mercado Libre.
+Placeholder del scraper de Mercado Libre.

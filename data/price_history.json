@@ -9,12 +9,23 @@
                 "fecha": "D/M/Y",
                 "hora": "24h format",
                 "fecha_hora": "ISO 8601",
+                "estado": "disponible | agotado | sin_precio_region | no_encontrado",
                 "oferta": false,
                 "precio": "0",
                 "descuento": "0",
-                "moneda": "Mx"
+                "moneda": "MXN"
             }
         ],
-        "precio_historico": ["moneda", "historico_bajo", "historico_alto"]
+        "precio_historico": {
+            "moneda": "MXN",
+            "historico_bajo": {
+                "precio": "0",
+                "fecha_hora": "ISO 8601"
+            },
+            "historico_alto": {
+                "precio": "0",
+                "fecha_hora": "ISO 8601"
+            }
+        }
     }
 }
