@@ -24,13 +24,11 @@ MONEDA_POR_PAIS = {
 
 class steam_scraper(store_scraper):
     nombre_tienda = "steam"
-
     def __init__(self, country_code: str = "mx", idioma: str = "spanish", timeout: int = 10):
         self.cc = country_code
         self.idioma = idioma
         self.timeout = timeout
         self.divisa_region = MONEDA_POR_PAIS.get(country_code.lower(), country_code.upper())
-
     def buscar_precio(self, id_producto: str) -> resultado_precio:
         identificador = str(id_producto).strip()
         if identificador.isdigit():
@@ -132,6 +130,8 @@ class steam_scraper(store_scraper):
             estado=EstadoProducto.DISPONIBLE,
         )
 
+""" 
+prueba
 if __name__ == "__main__":
     entrada = sys.argv[1] if len(sys.argv) > 1 else "Counter-Strike 2"
     scraper = steam_scraper()
@@ -139,4 +139,4 @@ if __name__ == "__main__":
         resultado = scraper.buscar_precio(entrada)
         print(resultado)
     except error as e:
-        print(f"nombre incorrecto o inexistente: {e}")
+        print(f"nombre incorrecto o inexistente: {e}")"""

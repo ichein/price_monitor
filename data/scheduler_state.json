@@ -1,0 +1,9 @@
+{
+    "vuelta_iniciada": null,
+    "global": {
+        "peticiones_usadas_hoy": 0,
+        "ultimo_reset": null
+    },
+    "tiendas": {},
+    "productos": {}
+}

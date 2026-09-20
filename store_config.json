@@ -1,1 +1,25 @@
-Config: intervalos, umbrales y pesos por tienda.
+{
+    "limite_global": {
+        "activo": true,
+        "peticiones_max_dia": 150
+    },
+    "reset_diario": {
+        "medianoche": true,
+        "ventana_movil_24h": false,
+        "al_iniciar_programa": false
+    },
+    "tiendas": {
+        "steam": {
+            "peticiones_max_dia": 100,
+            "jitter_minimo_segundos": 20
+        },
+        "amazon": {
+            "peticiones_max_dia": 40,
+            "jitter_minimo_segundos": 90
+        },
+        "mercadolibre": {
+            "peticiones_max_dia": 60,
+            "jitter_minimo_segundos": 60
+        }
+    }
+}

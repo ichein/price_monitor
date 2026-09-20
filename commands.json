@@ -1,0 +1,144 @@
+{
+    "sintaxis": "comando argumento_posicional --flag valor",
+    "notas": [
+        "Los argumentos con espacios van entre comillas: \"Counter-Strike 2\".",
+        "Los flags opcionales pueden omitirse; se usan valores por defecto.",
+        "'quitar' desactiva un producto (deja de recibir revisiones automáticas) sin borrar su historial.",
+        "'borrar' elimina el producto de la watchlist Y su historial de precios; es irreversible.",
+        "Marcar un producto como favorito le suma +1 permanente a su peso; su mínimo pasa de 1 a 2 mientras sea favorito."
+    ],
+    "comandos": {
+        "agregar": {
+            "sintaxis": "agregar <tienda> <nombre_o_id> [--peso N] [--umbral PRECIO]",
+            "descripcion": "Agrega un producto a la watchlist. El identificador puede ser el nombre del producto o su id/appid si ya lo conoces.",
+            "argumentos": {
+                "tienda": "steam | amazon | mercadolibre (según lo configurado en store_config.json)",
+                "nombre_o_id": "Nombre a buscar, o id/appid conocido"
+            },
+            "flags": {
+                "--peso": "Entero 1-10. Por defecto 1.",
+                "--umbral": "Precio numérico. Si se omite, no se avisa por umbral, solo por bajada de precio."
+            },
+            "ejemplos": [
+                "agregar steam \"Counter-Strike 2\"",
+                "agregar steam 730 --peso 5 --umbral 300"
+            ]
+        },
+        "quitar": {
+            "sintaxis": "quitar <tienda> <nombre_o_id>",
+            "descripcion": "Desactiva un producto: deja de recibir revisiones automáticas del scheduler, pero conserva su historial y su configuración (peso, umbral, favorito) por si se reactiva después.",
+            "ejemplos": ["quitar steam 730"]
+        },
+        "borrar": {
+            "sintaxis": "borrar <tienda> <nombre_o_id> [--confirmar]",
+            "descripcion": "Elimina por completo un producto de la watchlist y borra su historial de precios. Es irreversible. Pide confirmación interactiva salvo que se use --confirmar.",
+            "flags": {
+                "--confirmar": "Omite la pregunta de confirmación (útil para scripts)."
+            },
+            "ejemplos": [
+                "borrar steam 730",
+                "borrar steam 730 --confirmar"
+            ]
+        },
+        "listar": {
+            "sintaxis": "listar [--tienda TIENDA] [--favoritos] [--inactivos]",
+            "descripcion": "Muestra los productos vigilados. Sin flags, muestra todos los activos de todas las tiendas.",
+            "flags": {
+                "--tienda": "Filtra por tienda.",
+                "--favoritos": "Solo muestra favoritos.",
+                "--inactivos": "Incluye también los desactivados con 'quitar'."
+            },
+            "ejemplos": [
+                "listar",
+                "listar --tienda steam --favoritos"
+            ]
+        },
+        "consultar": {
+            "sintaxis": "consultar <tienda> <nombre_o_id> [--forzar]",
+            "descripcion": "Fuerza una consulta manual inmediata, fuera del presupuesto diario del scheduler. Respeta el límite máximo de la tienda salvo que se use --forzar (con advertencia de posible bloqueo).",
+            "flags": {
+                "--forzar": "Ignora el límite diario de la tienda. Riesgo de bloqueo por la tienda."
+            },
+            "ejemplos": [
+                "consultar steam 730",
+                "consultar amazon B08N5WRWNW --forzar"
+            ]
+        },
+        "revisar": {
+            "sintaxis": "revisar",
+            "descripcion": "Ejecuta una pasada normal del scheduler ahora mismo (respetando presupuesto, pesos y jitter), en vez de esperar al próximo disparador automático.",
+            "ejemplos": ["revisar"]
+        },
+        "historial": {
+            "sintaxis": "historial <tienda> <nombre_o_id> [--limite N]",
+            "descripcion": "Muestra el historial de precios registrado de un producto.",
+            "flags": {
+                "--limite": "Cantidad de registros más recientes a mostrar. Por defecto 20."
+            },
+            "ejemplos": [
+                "historial steam 730",
+                "historial steam 730 --limite 5"
+            ]
+        },
+        "favorito": {
+            "sintaxis": "favorito <tienda> <nombre_o_id> <on|off>",
+            "descripcion": "Marca o desmarca un producto como favorito. Al activarlo, suma +1 permanente a su peso y eleva su mínimo de peso a 2 mientras siga marcado. Al desactivarlo, se retira el +1 y el mínimo vuelve a 1.",
+            "ejemplos": [
+                "favorito steam 730 on",
+                "favorito steam 730 off"
+            ]
+        },
+        "peso": {
+            "sintaxis": "peso <tienda> <nombre_o_id> <0-10>",
+            "descripcion": "Cambia manualmente el peso de un producto. Respeta el mínimo vigente (1, o 2 si es favorito). Poner 0 requiere confirmación, ya que saca al producto de la cola automática del scheduler.",
+            "ejemplos": ["peso steam 730 7"]
+        },
+        "umbral": {
+            "sintaxis": "umbral <tienda> <nombre_o_id> <precio|off>",
+            "descripcion": "Cambia el umbral de aviso de un producto, o lo elimina con 'off'.",
+            "ejemplos": [
+                "umbral steam 730 300",
+                "umbral steam 730 off"
+            ]
+        },
+        "configurar": {
+            "sintaxis": "configurar <telegram|correo|popups>",
+            "descripcion": "Entra al flujo interactivo para completar o corregir la configuración de un canal de notificación.",
+            "ejemplos": ["configurar telegram"]
+        },
+        "limpiar": {
+            "sintaxis": "limpiar [--confirmar]",
+            "descripcion": "Borra las credenciales guardadas de Telegram y correo, y desactiva los popups. No toca watchlist ni historial. Pide confirmación salvo --confirmar.",
+            "ejemplos": ["limpiar"]
+        },
+        "segundo_plano": {
+            "sintaxis": "segundo_plano <iniciar|detener>",
+            "descripcion": "Inicia o detiene el modo de ejecución en segundo plano del scheduler (revisión automática según los disparadores configurados).",
+            "ejemplos": [
+                "segundo_plano iniciar",
+                "segundo_plano detener"
+            ]
+        },
+        "estado": {
+            "sintaxis": "estado [--tienda TIENDA]",
+            "descripcion": "Muestra presupuesto usado/restante del día por tienda, estado de la vuelta actual (productos atendidos vs. pendientes), y si el modo segundo plano está corriendo.",
+            "ejemplos": [
+                "estado",
+                "estado --tienda steam"
+            ]
+        },
+        "ayuda": {
+            "sintaxis": "ayuda [comando]",
+            "descripcion": "Lista todos los comandos disponibles, o muestra el detalle de uno en particular.",
+            "ejemplos": [
+                "ayuda",
+                "ayuda agregar"
+            ]
+        },
+        "salir": {
+            "sintaxis": "salir",
+            "descripcion": "Cierra el programa. Si el modo segundo plano está activo, pregunta si también debe detenerse.",
+            "ejemplos": ["salir"]
+        }
+    }
+}

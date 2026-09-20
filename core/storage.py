@@ -1,7 +1,6 @@
 # core/storage.py
 # Lee y guarda watchlist/historial; detecta ofertas y cambios de precio.
 
-import json
 import math
 import sys
 import uuid
@@ -14,13 +13,13 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from core.store_base import resultado_precio, EstadoProducto
-from core.extras.recode import RAIZ_PROYECTO
+from core.extras.recode import RAIZ_PROYECTO, _cargar_json, _guardar_json
 
-# Rutas absolutas desde la raíz.
+# Rutas absolutas desde la raíz. Única fuente de verdad — recode.py no las conoce.
 WATCHLIST_PATH = RAIZ_PROYECTO / "data" / "watchlist.json"
 HISTORY_PATH = RAIZ_PROYECTO / "data" / "price_history.json"
 
-# Plantillas guardadas en el JSON.
+# Plantillas guardadas en el JSON. Única fuente de verdad del schema.
 CLAVE_PLANTILLA_WATCHLIST = "producto_formato"
 CLAVE_PLANTILLA_HISTORIAL = "producto_historial_formato"
 
@@ -65,20 +64,12 @@ PLANTILLA_HISTORIAL = {
     },
 }
 
-# --- helpers de lectura/escritura crudos ---
-
-def _cargar_json(ruta: Path) -> dict:
-    with open(ruta, "r", encoding="utf-8") as archivo:
-        return json.load(archivo)
-
-def _guardar_json(ruta: Path, datos: dict) -> None:
-    with open(ruta, "w", encoding="utf-8") as archivo:
-        json.dump(datos, archivo, indent=4, ensure_ascii=False)
-
+# --- helpers propios de este dominio ---
 
 def _clave(tienda: str, id_interno: str) -> str:
     """Clave compuesta."""
     return f"{tienda}:{id_interno}"
+
 
 def _normalizar_texto(texto) -> str:
     """Normaliza texto."""
@@ -97,7 +88,7 @@ def _normalizar_umbral(umbral) -> Optional[float]:
         texto = str(umbral).strip().replace("$", "").replace(",", "").replace(" ", "")
         if not texto:
             return None
-        valor = float(texto)  # ValueError si no es número
+        valor = float(texto)
     if not math.isfinite(valor) or valor < 0:
         raise ValueError("el umbral debe ser un número finito y no negativo")
     return valor
@@ -108,18 +99,21 @@ def _leer_umbral(producto: dict) -> Optional[float]:
     try:
         return _normalizar_umbral(producto.get("umbral_aviso"))
     except ValueError:
-        print(f"[storage] umbral_aviso inválido ({producto.get('umbral_aviso')!r}) en "f"'{producto.get('nombre_producto')}': se ignora.")
+        print(f"[storage] umbral_aviso inválido ({producto.get('umbral_aviso')!r}) en "
+              f"'{producto.get('nombre_producto')}': se ignora.")
         return None
 
-# --- watchlist ---
 
+# --- watchlist ---
 def cargar_watchlist() -> dict:
     datos = _cargar_json(WATCHLIST_PATH)
     datos.pop(CLAVE_PLANTILLA_WATCHLIST, None)  # es solo plantilla de referencia
     return datos
 
+
 def guardar_watchlist(productos: dict) -> None:
     _guardar_json(WATCHLIST_PATH, {CLAVE_PLANTILLA_WATCHLIST: PLANTILLA_WATCHLIST, **productos})
+
 
 def _fusionar_entradas(existente: dict, nueva: dict) -> bool:
     """Fusiona entradas duplicadas."""
@@ -133,7 +127,8 @@ def _fusionar_entradas(existente: dict, nueva: dict) -> bool:
     return cambio
 
 
-def agregar_producto(tienda: str, nombre_producto: str, id_producto: str, peso: int = 0, umbral_aviso: Optional[float] = None) -> str:
+def agregar_producto(tienda: str, nombre_producto: str, id_producto: str,
+                      peso: int = 0, umbral_aviso: Optional[float] = None) -> str:
     """Agrega un producto y devuelve su clave."""
     umbral = _normalizar_umbral(umbral_aviso)  # ValueError claro si viene mal
     nuevo = {
@@ -165,15 +160,17 @@ def agregar_producto(tienda: str, nombre_producto: str, id_producto: str, peso: 
     guardar_watchlist(productos)
     return clave
 
-# --- historial de precios ---
 
+# --- historial de precios ---
 def cargar_historial() -> dict:
     datos = _cargar_json(HISTORY_PATH)
     datos.pop(CLAVE_PLANTILLA_HISTORIAL, None)
     return datos
 
+
 def guardar_historial(historial: dict) -> None:
     _guardar_json(HISTORY_PATH, {CLAVE_PLANTILLA_HISTORIAL: PLANTILLA_HISTORIAL, **historial})
+
 
 def _entrada_vacia(resultado: resultado_precio) -> dict:
     return {
@@ -188,6 +185,7 @@ def _entrada_vacia(resultado: resultado_precio) -> dict:
             "historico_alto": None,
         },
     }
+
 
 def _construir_registro(resultado: resultado_precio) -> dict:
     """Construye el registro del historial."""
@@ -231,55 +229,6 @@ def obtener_ultimo_precio(tienda: str, id_producto_interno: str) -> Optional[flo
         return None
     return _ultimo_precio_de(entrada)
 
-
-def registrar_resultado(resultado: resultado_precio, clave_watchlist: str) -> dict:
-    """Guarda el resultado y devuelve señales."""
-    historial = cargar_historial()
-    clave_definitiva = _clave(resultado.tienda, resultado.id_producto_interno)
-    entrada = historial.get(clave_definitiva)
-    if entrada is None:
-        entrada = _entrada_vacia(resultado)
-        historial[clave_definitiva] = entrada
-    # Se calcula ANTES de agregar el registro nuevo (y sobre la copia en memoria, sin releer el archivo).
-    precio_anterior = _ultimo_precio_de(entrada)
-    entrada["historial"].append(_construir_registro(resultado))
-    disponible = (
-        resultado.estado == EstadoProducto.DISPONIBLE
-        and resultado.precio_actual is not None
-    )
-    if disponible:
-        bajo = entrada["precio_historico"]["historico_bajo"]
-        alto = entrada["precio_historico"]["historico_alto"]
-        if bajo is None or resultado.precio_actual < bajo["precio"]:
-            entrada["precio_historico"]["historico_bajo"] = {
-                "precio": resultado.precio_actual, "fecha_hora": resultado.timestamp,
-            }
-        if alto is None or resultado.precio_actual > alto["precio"]:
-            entrada["precio_historico"]["historico_alto"] = {
-                "precio": resultado.precio_actual, "fecha_hora": resultado.timestamp,
-            }
-    guardar_historial(historial)
-    umbral_aviso = _sincronizar_watchlist(resultado, clave_watchlist, clave_definitiva)
-    oferta_nueva = (
-        disponible
-        and precio_anterior is not None
-        and resultado.precio_actual < precio_anterior
-    )
-    cruzo_umbral = (
-        disponible
-        and umbral_aviso is not None
-        and resultado.precio_actual <= umbral_aviso
-        and (precio_anterior is None or precio_anterior > umbral_aviso)
-    )
-
-    return {
-        "oferta_nueva": oferta_nueva,
-        "cruzo_umbral": cruzo_umbral,
-        "precio_anterior": precio_anterior,
-        "precio_actual": resultado.precio_actual if disponible else None,
-    }
-
-
 def _sincronizar_watchlist(resultado: resultado_precio, clave_watchlist: str, clave_definitiva: str) -> Optional[float]:
     """Sincroniza watchlist y devuelve el umbral."""
     productos = cargar_watchlist()
@@ -296,8 +245,6 @@ def _sincronizar_watchlist(resultado: resultado_precio, clave_watchlist: str, cl
         if existente is None:
             productos[clave_definitiva] = producto
         else:
-            # CORREGIDO: antes `productos[clave_definitiva] = producto`
-            # sobrescribía la entrada ya existente (con su umbral, peso y favorito).
             print(f"[storage] '{producto.get('nombre_producto')}' ya estaba en la watchlist " f"como '{clave_definitiva}': se fusionan sin perder la entrada existente.")
             _fusionar_entradas(existente, producto)
             if not existente.get("id_producto_interno"):
@@ -308,5 +255,65 @@ def _sincronizar_watchlist(resultado: resultado_precio, clave_watchlist: str, cl
         guardar_watchlist(productos)
     return _leer_umbral(producto)
 
+
 if __name__ == "__main__":
     print("storage.py: módulo de persistencia, aún sin prueba de terminal.")
+
+def registrar_resultado(resultado: resultado_precio, clave_watchlist: str) -> dict:
+    """Guarda el resultado y devuelve señales."""
+    historial = cargar_historial()
+    clave_definitiva = _clave(resultado.tienda, resultado.id_producto_interno)
+    entrada = historial.get(clave_definitiva)
+    if entrada is None:
+        entrada = _entrada_vacia(resultado)
+        historial[clave_definitiva] = entrada
+    # Se calcula ANTES de agregar el registro nuevo (y sobre la copia en memoria, sin releer el archivo).
+    precio_anterior = resultado.precio_anterior if resultado.precio_anterior is not None else _ultimo_precio_de(entrada)
+    entrada["historial"].append(_construir_registro(resultado))
+    disponible = (
+        resultado.estado == EstadoProducto.DISPONIBLE
+        and resultado.precio_actual is not None
+    )
+    nuevo_historico_bajo = False
+    nuevo_historico_alto = False
+    if disponible:
+        bajo = entrada["precio_historico"]["historico_bajo"]
+        alto = entrada["precio_historico"]["historico_alto"]
+        if bajo is None or resultado.precio_actual < bajo["precio"]:
+            entrada["precio_historico"]["historico_bajo"] = {
+                "precio": resultado.precio_actual, "fecha_hora": resultado.timestamp,
+            }
+            nuevo_historico_bajo = bajo is not None  # el primer registro no cuenta como "nuevo" mínimo
+        if alto is None or resultado.precio_actual > alto["precio"]:
+            entrada["precio_historico"]["historico_alto"] = {
+                "precio": resultado.precio_actual, "fecha_hora": resultado.timestamp,
+            }
+            nuevo_historico_alto = alto is not None  # ídem para el máximo
+    guardar_historial(historial)
+    umbral_aviso = _sincronizar_watchlist(resultado, clave_watchlist, clave_definitiva)
+    oferta_nueva = (
+        disponible
+        and precio_anterior is not None
+        and resultado.precio_actual < precio_anterior
+    )
+    precio_subio = (
+        disponible
+        and precio_anterior is not None
+        and resultado.precio_actual > precio_anterior
+    )
+    cruzo_umbral = (
+        disponible
+        and umbral_aviso is not None
+        and resultado.precio_actual <= umbral_aviso
+        and (precio_anterior is None or precio_anterior > umbral_aviso)
+    )
+
+    return {
+        "oferta_nueva": oferta_nueva,
+        "cruzo_umbral": cruzo_umbral,
+        "precio_subio": precio_subio,
+        "nuevo_historico_bajo": nuevo_historico_bajo,
+        "nuevo_historico_alto": nuevo_historico_alto,
+        "precio_anterior": precio_anterior,
+        "precio_actual": resultado.precio_actual if disponible else None,
+    }

@@ -1,4 +1,4 @@
-# Utilidades reutilizables.
+# Utilidades reutilizables (genéricas, sin conocer watchlist/historial).
 import json
 import os
 import re
@@ -17,6 +17,15 @@ ACTIVADORES = {
     "telegram_config": "telegram_activado",
     "correo_config": "correo_activado",
 }
+
+def _cargar_json(ruta: Path) -> dict:
+    with open(ruta, "r", encoding="utf-8") as archivo:
+        return json.load(archivo)
+
+
+def _guardar_json(ruta: Path, datos: dict) -> None:
+    with open(ruta, "w", encoding="utf-8") as archivo:
+        json.dump(datos, archivo, indent=4, ensure_ascii=False)
 
 
 def y_or_n(prompt: str = "¿Confirmas? (Y/N): ") -> bool:

@@ -3,48 +3,74 @@
 ```text
 price_monitor/
 ├── core/
-│   ├── store_base.py        # Clase abstracta StoreScraper
-│   ├── scheduler.py         # Pendiente: lógica de horarios aleatorios / pesos
-│   ├── storage.py           # Pendiente: leer/escribir JSON e historial de precios
-│   ├── notifier.py          # Envío de avisos por correo y ventanas emergentes
+│   ├── store_base.py        # Base abstracta para scrapers
+│   ├── scheduler.py         # Presupuesto, colas y balanceo de consultas
+│   ├── storage.py           # Persistencia de watchlist e historial
+│   ├── notifier.py          # Notificaciones por Telegram, correo y popups
 │   └── extras/
-│       └── recode.py        # Funciones auxiliares
+│       └── recode.py        # Helpers de entrada, validación y JSON
 ├── stores/
-│   ├── steam.py             # Implementación concreta para Steam
-    ├── eneba.py             # (v2, vacío por ahora)
-│   ├── amazon.py            # (v2, vacío por ahora)
-│   └── mercadolibre.py      # (v2, vacío por ahora)
+│   ├── steam.py             # Scraper funcional de Steam
+│   ├── amazon.py            # Placeholder de Amazon
+│   └── mercadolibre.py      # Placeholder de Mercado Libre
 ├── data/
-│   ├── watchlist.json       # Lista de productos que deben vigilarse
-│   ├── user_data.json       # Configuración de Telegram, correo y popups
+│   ├── watchlist.json       # Productos vigilados
+│   ├── user_data.json       # Configuración del usuario
+│   ├── scheduler_state.json  # Estado del planificador
 │   └── price_history.json   # Historial de precios
-├── style/
-│   ├── popup.qss            # Estilos visuales de las ventanas emergentes
-│   └── visual_main.qss      # Hoja de estilos para la interfaz visual
-├── store_config.json        # Configuración de las tiendas disponibles
-├── main.py                  # Pendiente: punto de entrada y coordinación de la aplicación
-├── pruebas.py               # Pruebas aisladas
 ├── visuals/
-│   ├── visual_main.py       # Placeholder para la interfaz visual
-│   └── visual_historial.py  # Interfaz visual del historial
-└── README.md                # Documentación y estructura del proyecto
+│   ├── visual_main.py       # Interfaz principal visual
+│   └── visual_historial.py  # Historial visual
+├── style/
+│   ├── popup.qss            # Estilo de popups
+│   └── visual_main.qss      # Estilo de la interfaz
+├── main.py                  # Punto de entrada principal
+├── commands.json            # Comandos y ayuda de la consola
+├── store_config.json        # Configuración por tienda
+└── README.md                # Documentación del proyecto
 ```
+
+## Comandos
+
+Sintaxis: `comando argumentos [--opciones]`. Los comandos se definen en `commands.json`.
+
+- `agregar`: añade un producto a la watchlist.
+- `quitar`: desactiva un producto sin borrar su historial.
+- `borrar`: elimina un producto y su historial.
+- `listar`: muestra los productos vigilados.
+- `consultar`: realiza una consulta manual.
+- `revisar`: ejecuta una pasada del scheduler.
+- `historial`: muestra el historial de precios.
+- `favorito`: activa o desactiva un favorito.
+- `peso`: cambia la prioridad de un producto.
+- `umbral`: configura o elimina un precio de aviso.
+- `configurar`: configura Telegram, correo o popups.
+- `limpiar`: elimina las credenciales de notificación.
+- `segundo_plano`: inicia o detiene las revisiones automáticas.
+- `estado`: muestra el estado del scheduler y el presupuesto.
+- `ayuda`: muestra la ayuda disponible.
+- `salir`: cierra el programa.
 
 ## Checklist
 
 - [x] `core/store_base.py`
-- [ ] `core/scheduler.py`
-- [ ] `core/storage.py`
+- [x] `core/scheduler.py`
+- [x] `core/storage.py`
 - [x] `core/notifier.py`
+- [x] `core/extras/recode.py`
 - [x] `stores/steam.py`
 - [ ] `stores/amazon.py`
 - [ ] `stores/mercadolibre.py`
-- [ ] `data/watchlist.json`
-- [ ] `data/user_data.json`
-- [ ] `style/popup.qss`
-- [ ] `style/visual_main.qss`
-- [ ] `store_config.json`
-- [ ] `main.py`
+- [x] `data/watchlist.json`
+- [x] `data/user_data.json`
+- [x] `data/scheduler_state.json`
+- [x] `data/price_history.json`
 - [ ] `visuals/visual_main.py`
+- [ ] `visuals/visual_historial.py`
+- [x] `style/popup.qss`
+- [x] `style/visual_main.qss`
+- [ ] `main.py`
+- [x] `commands.json`
+- [x] `store_config.json`
 - [ ] `README.md`
 
