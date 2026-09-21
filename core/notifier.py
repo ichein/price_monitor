@@ -313,8 +313,7 @@ class popup(QDialog):
             self._finalizar_cierre()
             return
         fuera = QPoint(screen.availableGeometry().right(), self.y())
-        self._mover_a(fuera, _AJUSTES["tiempo_salida"], QEasingCurve.Type.InCubic,
-                      self._finalizar_cierre)
+        self._mover_a(fuera, _AJUSTES["tiempo_salida"], QEasingCurve.Type.InCubic, self._finalizar_cierre)
 
     def _finalizar_cierre(self):
         self._terminado = True
@@ -391,10 +390,10 @@ def detener_bucle_popups():
         _app.quit()
 
 
-def mostrar_popups(mensajes: list, esperar: bool = True):
+def mostrar_popups(mensajes: list, esperar: bool = True, forzar: bool = False):
     """Muestra varios popups apilados."""
     config = _leer_config().get("popup_config") or {}
-    if not config.get("popup_activado", False):
+    if not forzar and not config.get("popup_activado", False):
         return
     _actualizar_ajustes(config)
     _get_app()
@@ -408,5 +407,5 @@ def mostrar_popups(mensajes: list, esperar: bool = True):
         _esperar_a_que_cierren()
 
 
-def mostrar_popup(mensaje: dict, esperar: bool = True):
-    mostrar_popups([mensaje], esperar=esperar)
+def mostrar_popup(mensaje: dict, esperar: bool = True, forzar: bool = False):
+    mostrar_popups([mensaje], esperar=esperar, forzar=forzar)

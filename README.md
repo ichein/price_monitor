@@ -3,31 +3,38 @@
 ```text
 price_monitor/
 ├── core/
-│   ├── store_base.py        # Base abstracta para scrapers
+│   ├── background.py        # Gestión del segundo plano / scheduler loop
+│   ├── notifier.py          # Notificaciones por Telegram, correo y popups
 │   ├── scheduler.py         # Presupuesto, colas y balanceo de consultas
 │   ├── storage.py           # Persistencia de watchlist e historial
-│   ├── notifier.py          # Notificaciones por Telegram, correo y popups
+│   ├── store_base.py        # Base abstracta para scrapers
 │   └── extras/
 │       └── recode.py        # Helpers de entrada, validación y JSON
 ├── stores/
-│   ├── steam.py             # Scraper funcional de Steam
 │   ├── amazon.py            # Placeholder de Amazon
-│   └── mercadolibre.py      # Placeholder de Mercado Libre
+│   ├── eneba.py             # Placeholder de Eneba
+│   ├── mercadolibre.py      # Placeholder de Mercado Libre
+│   └── steam.py             # Scraper funcional de Steam
 ├── data/
-│   ├── watchlist.json       # Productos vigilados
+│   ├── price_history.json   # Historial de precios
+│   ├── scheduler_state.json # Estado del planificador
 │   ├── user_data.json       # Configuración del usuario
-│   ├── scheduler_state.json  # Estado del planificador
-│   └── price_history.json   # Historial de precios
+│   └── watchlist.json       # Productos vigilados
 ├── visuals/
-│   ├── visual_main.py       # Interfaz principal visual
-│   └── visual_historial.py  # Historial visual
+│   ├── configuracion.py     # Pantalla de configuración de la app
+│   ├── listas.py            # Listados y vistas de productos
+│   ├── visual_historial.py  # Historial visual
+│   └── visual_main.py       # Interfaz principal visual
 ├── style/
 │   ├── popup.qss            # Estilo de popups
 │   └── visual_main.qss      # Estilo de la interfaz
+├── price_monitor/           # Entorno virtual (venv)
 ├── main.py                  # Punto de entrada principal
 ├── commands.json            # Comandos y ayuda de la consola
 ├── store_config.json        # Configuración por tienda
-└── README.md                # Documentación del proyecto
+├── README.md                # Documentación del proyecto
+├── debug_segundo_plano.py   # Módulo auxiliar de depuración del segundo plano
+└── test_commands.py         # Script de validación de comandos del programa
 ```
 
 ## Comandos
@@ -76,27 +83,12 @@ Cada scraper debe implementar `buscar_precio(id_producto)` y devolver un `result
 
 Los campos deben conservar estos nombres y tipos. Para estados sin precio, `precio_actual` debe ser `None`.
 
-## Checklist
+## Checklist 
 
-- [x] `core/store_base.py`
-- [x] `core/scheduler.py`
-- [x] `core/storage.py`
-- [x] `core/notifier.py`
-- [x] `core/extras/recode.py`
-- [x] Contrato `resultado_precio` para scrapers
-- [x] `stores/steam.py`
 - [ ] `stores/amazon.py`
 - [ ] `stores/mercadolibre.py`
-- [x] `data/watchlist.json`
-- [x] `data/user_data.json`
-- [x] `data/scheduler_state.json`
-- [x] `data/price_history.json`
+- [ ] `stores/eneba.py`
 - [ ] `visuals/visual_main.py`
 - [ ] `visuals/visual_historial.py`
-- [x] `style/popup.qss`
-- [x] `style/visual_main.qss`
-- [ ] `main.py`
-- [x] `commands.json`
-- [x] `store_config.json`
-- [x] `README.md`
+- [ ] `core/background.py`
 

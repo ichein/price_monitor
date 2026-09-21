@@ -36,11 +36,29 @@ def cargar_comandos() -> dict:
         print(f"[main] no se pudo cargar commands.json ({e}); 'ayuda' quedará limitada.")
         return {"comandos": {}}
 
+def _es_placeholder(ruta_modulo: Path) -> bool:
+    """True si el archivo no contiene código real de scraper (solo
+    comentarios/placeholder). Se usa para no confundir 'aún no
+    implementado' con un fallo real de importación."""
+    try:
+        texto = ruta_modulo.read_text(encoding="utf-8")
+    except OSError:
+        return True
+    lineas_utiles = [
+        l for l in texto.splitlines()
+        if l.strip() and not l.strip().startswith("#")
+        and not (l.strip().startswith('"""') or l.strip().startswith("'''"))
+    ]
+    codigo = "\n".join(lineas_utiles)
+    return "class " not in codigo and "def " not in codigo
+
 
 def _cargar_scrapers() -> dict:
-    """Intenta importar cada scraper de tienda. Las tiendas no implementadas
-    todavía (amazon, mercadolibre) quedan con valor None sin tumbar el
-    programa, porque sus archivos aún son placeholders."""
+    """Intenta importar cada scraper de tienda. Las tiendas cuyo archivo
+    es solo un placeholder (sin class/def real) quedan en None en
+    silencio, porque es el estado esperado para v2. Si el archivo SÍ
+    tiene código pero el import falla, se imprime el error: eso es un
+    bug real, no una tienda pendiente."""
     especificaciones = {
         "steam": ("stores.steam", "steam_scraper"),
         "amazon": ("stores.amazon", "amazon_scraper"),
@@ -48,13 +66,21 @@ def _cargar_scrapers() -> dict:
     }
     registros = {}
     for tienda, (modulo, clase) in especificaciones.items():
+        ruta_archivo = RAIZ_PROYECTO / (modulo.replace(".", "/") + ".py")
+        if not ruta_archivo.exists():
+            registros[tienda] = None
+            continue
+        if _es_placeholder(ruta_archivo):
+            registros[tienda] = None  # esperado, sin aviso
+            continue
         try:
             mod = importlib.import_module(modulo)
             registros[tienda] = getattr(mod, clase)()
-        except Exception:
+        except Exception as e:
+            print(f"[main] ERROR cargando el scraper de '{tienda}': {e!r}")
+            print("       El archivo no es un placeholder vacío; parece un fallo real. " f"Usa 'debug_scraper {tienda}' para ver el traceback completo.")
             registros[tienda] = None
     return registros
-
 
 def _leer_config_usuario() -> dict:
     try:
@@ -62,7 +88,6 @@ def _leer_config_usuario() -> dict:
             return json.load(archivo)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
-
 
 # --- parseo de línea de comandos ---
 
@@ -95,7 +120,6 @@ def _parsear(linea: str):
             i += 1
     return comando, posicionales, flags
 
-
 def _resolver_producto(tienda: str, nombre_o_id: str):
     """Búsqueda parcial dentro de la watchlist. None si no hay match único."""
     coincidencias = storage._buscar_productos(tienda, nombre_o_id)
@@ -110,12 +134,49 @@ def _resolver_producto(tienda: str, nombre_o_id: str):
         return None
     return coincidencias[0]
 
-
 def _entrada_scraper(producto: dict) -> str:
     return producto.get("id_producto_interno") or producto.get("id_producto")
 
-
 # --- comandos ---
+
+def cmd_debug_segundo_plano(pos, flags, scrapers, _doc):
+    try:
+        segundos = int(pos[0]) if pos else 30
+    except ValueError:
+        segundos = 30
+    print(f"[debug] iniciando segundo plano con intervalo fijo de {segundos}s " "('segundo_plano detener' para parar).")
+    iniciar_segundo_plano(scrapers, intervalo_segundos=segundos)
+
+def cmd_debug_popup(pos, flags, scrapers, _doc):
+    try:
+        n = max(1, int(pos[0])) if pos else 1
+    except ValueError:
+        n = 1
+    mensajes = [
+        {"tipo": "info", "titulo": f"Prueba {i + 1}/{n}", "mensaje": "Popup de prueba del monitor de precios."}
+        for i in range(n)
+    ]
+    print(f"Mostrando {n} popup(s) de prueba (se ignora popup_activado para esta prueba)...")
+    notifier.mostrar_popups(mensajes, forzar=True)
+
+def cmd_debug_scraper(pos, flags, scrapers, _doc):
+    if not pos:
+        print("Uso: debug_scraper <tienda>")
+        return
+    especificaciones = {
+        "steam": "stores.steam", "amazon": "stores.amazon", "mercadolibre": "stores.mercadolibre",
+    }
+    modulo = especificaciones.get(pos[0])
+    if modulo is None:
+        print(f"Tienda desconocida: '{pos[0]}'.")
+        return
+    import traceback
+    try:
+        importlib.reload(sys.modules[modulo]) if modulo in sys.modules else importlib.import_module(modulo)
+        print(f"'{pos[0]}' importa sin errores.")
+    except Exception:
+        print(f"Traceback completo al importar '{modulo}':")
+        traceback.print_exc()
 
 def cmd_agregar(pos, flags, scrapers, _doc):
     if len(pos) < 2:
@@ -139,7 +200,6 @@ def cmd_agregar(pos, flags, scrapers, _doc):
         return
     print(f"Producto agregado. Se resolverá su id real en la próxima consulta (clave interna: {clave}).")
 
-
 def cmd_quitar(pos, flags, scrapers, _doc):
     if len(pos) < 2:
         print("Uso: quitar <tienda> <nombre_o_id>")
@@ -150,7 +210,6 @@ def cmd_quitar(pos, flags, scrapers, _doc):
     clave, producto = resultado
     storage.set_activado(clave, False)
     print(f"'{producto.get('nombre_producto')}' desactivado. Su historial se conserva.")
-
 
 def cmd_borrar(pos, flags, scrapers, _doc):
     if len(pos) < 2:
@@ -174,7 +233,6 @@ def cmd_listar(pos, flags, scrapers, _doc):
     filtro_tienda = flags.get("tienda")
     solo_favoritos = bool(flags.get("favoritos"))
     incluir_inactivos = bool(flags.get("inactivos"))
-
     filas = []
     for producto in productos.values():
         if filtro_tienda and producto.get("tienda") != filtro_tienda:
@@ -184,7 +242,6 @@ def cmd_listar(pos, flags, scrapers, _doc):
         if not incluir_inactivos and not producto.get("activado"):
             continue
         filas.append(producto)
-
     if not filas:
         print("No hay productos que coincidan con ese filtro.")
         return
@@ -193,7 +250,6 @@ def cmd_listar(pos, flags, scrapers, _doc):
         estado = "activo" if p.get("activado") else "inactivo"
         ident = p.get("id_producto_interno") or p.get("id_producto")
         print(f"{marca} [{p.get('tienda')}] {p.get('nombre_producto')} " f"(id: {ident}, peso: {p.get('peso')}, {estado})")
-
 
 def cmd_consultar(pos, flags, scrapers, _doc):
     if len(pos) < 2:
@@ -219,7 +275,6 @@ def cmd_consultar(pos, flags, scrapers, _doc):
     if señales["cruzo_umbral"]:
         print("Cruzó el umbral de aviso configurado.")
 
-
 def cmd_revisar(pos, flags, scrapers, _doc):
     activos = {t: s for t, s in scrapers.items() if s is not None}
     if not activos:
@@ -227,7 +282,6 @@ def cmd_revisar(pos, flags, scrapers, _doc):
         return
     resumen = scheduler.ejecutar_pasada(activos)
     print(f"Revisión completa: {len(resumen['atendidos'])} productos consultados, " f"{len(resumen['ofertas'])} con oferta nueva, " f"{len(resumen['umbral_cruzado'])} cruzaron su umbral, " f"{resumen['agotados_o_sin_region']} agotados o sin precio en su región.")
-
 
 def cmd_historial(pos, flags, scrapers, _doc):
     if len(pos) < 2:
@@ -251,7 +305,6 @@ def cmd_historial(pos, flags, scrapers, _doc):
         precio_txt = f"{precio} {registro.get('moneda', '')}" if precio is not None else registro.get("estado")
         print(f"{registro['fecha_hora']}  {precio_txt}")
 
-
 def cmd_favorito(pos, flags, scrapers, _doc):
     if len(pos) < 3 or pos[2] not in ("on", "off"):
         print("Uso: favorito <tienda> <nombre_o_id> <on|off>")
@@ -265,7 +318,6 @@ def cmd_favorito(pos, flags, scrapers, _doc):
         print(f"Error: {error}")
         return
     print(f"'{producto.get('nombre_producto')}' favorito: {pos[2] == 'on'}.")
-
 
 def cmd_peso(pos, flags, scrapers, _doc):
     if len(pos) < 3:
@@ -291,7 +343,6 @@ def cmd_peso(pos, flags, scrapers, _doc):
         return
     print(f"Peso de '{producto.get('nombre_producto')}' actualizado a {peso}.")
 
-
 def cmd_umbral(pos, flags, scrapers, _doc):
     if len(pos) < 3:
         print("Uso: umbral <tienda> <nombre_o_id> <precio|off>")
@@ -307,7 +358,6 @@ def cmd_umbral(pos, flags, scrapers, _doc):
         return
     print(f"Umbral de '{producto.get('nombre_producto')}' actualizado.")
 
-
 def cmd_configurar(pos, flags, scrapers, _doc):
     if not pos:
         print("Uso: configurar <telegram|correo|popups>")
@@ -318,8 +368,7 @@ def cmd_configurar(pos, flags, scrapers, _doc):
     elif canal == "correo":
         modificar_json("correo_config", ["correo_receptor", "correo_remitente", "contraseña"])
     elif canal == "popups":
-        print("Los popups se configuran editando data/user_data.json directamente "
-              "(tiempos y radios); aquí solo puedes activarlos/desactivarlos.")
+        print("Los popups se configuran editando data/user_data.json directamente " "(tiempos y radios); aquí solo puedes activarlos/desactivarlos.")
         if y_or_n("¿Activar popups? (Y/N): "):
             config = _leer_config_usuario()
             config.setdefault("popup_config", {})["popup_activado"] = True
@@ -328,10 +377,8 @@ def cmd_configurar(pos, flags, scrapers, _doc):
     else:
         print("Canal no reconocido. Usa: telegram, correo o popups.")
 
-
 def cmd_limpiar(pos, flags, scrapers, _doc):
     limpiar_datos(confirmar=bool(flags.get("confirmar")))
-
 
 def cmd_estado(pos, flags, scrapers, _doc):
     config = scheduler.cargar_config_tiendas()
@@ -347,7 +394,6 @@ def cmd_estado(pos, flags, scrapers, _doc):
         print(f"{tienda}: {usados}/{maximo} usadas hoy, {disponible} disponibles ahora.")
     activo = BACKGROUND_STATE["hilo"] is not None and BACKGROUND_STATE["hilo"].is_alive()
     print(f"Modo segundo plano: {'activo' if activo else 'detenido'}.")
-
 
 def cmd_probar_conexion(pos, flags, scrapers, _doc):
     tiendas = [pos[0]] if pos else list(scrapers.keys())
@@ -368,7 +414,6 @@ def cmd_probar_conexion(pos, flags, scrapers, _doc):
         except Exception as e:
             print(f"{tienda}: error inesperado — {e}")
 
-
 def cmd_diagnostico(pos, flags, scrapers, _doc):
     archivos = [
         storage.WATCHLIST_PATH, storage.HISTORY_PATH, RUTA_USER_DATA,
@@ -384,7 +429,6 @@ def cmd_diagnostico(pos, flags, scrapers, _doc):
             print(f"{ruta}: OK.")
         except json.JSONDecodeError as e:
             print(f"{ruta}: JSON inválido ({e}).")
-
 
 def cmd_ayuda(pos, flags, scrapers, doc):
     comandos = doc.get("comandos", {})
@@ -403,7 +447,6 @@ def cmd_ayuda(pos, flags, scrapers, doc):
         print(f"  {nombre:<16} {info.get('descripcion', '')[:70]}")
     print("Usa 'ayuda <comando>' para el detalle de uno.")
 
-
 def cmd_segundo_plano(pos, flags, scrapers, _doc):
     if not pos or pos[0] not in ("iniciar", "detener"):
         print("Uso: segundo_plano <iniciar|detener>")
@@ -413,15 +456,16 @@ def cmd_segundo_plano(pos, flags, scrapers, _doc):
     else:
         detener_segundo_plano()
 
-
 def cmd_salir(pos, flags, scrapers, _doc):
     if BACKGROUND_STATE["hilo"] is not None and BACKGROUND_STATE["hilo"].is_alive():
         if y_or_n("El modo segundo plano está activo. ¿Detenerlo antes de salir? (Y/N): "):
             detener_segundo_plano()
     return True  # señal para romper el loop principal
 
-
 DESPACHADOR = {
+    "debug_popup": cmd_debug_popup,
+    "debug_scraper": cmd_debug_scraper,
+    "debug_segundo_plano": cmd_debug_segundo_plano,
     "agregar": cmd_agregar,
     "quitar": cmd_quitar,
     "borrar": cmd_borrar,
@@ -445,11 +489,8 @@ DESPACHADOR = {
 
 # --- modo segundo plano ---
 # Disparador implementado: cada 12h desde medianoche, y al iniciar el
-# programa (si está activado en user_data.json). 'al_volver_reposo' y
-# 'antes_apagar' quedan pendientes de elegir una librería.
 
 BACKGROUND_STATE = {"hilo": None, "detener": threading.Event()}
-
 
 def _segundos_hasta_proximo_12h() -> float:
     ahora = datetime.now()
@@ -458,31 +499,31 @@ def _segundos_hasta_proximo_12h() -> float:
     proximo = next(c for c in candidatos if c > ahora)
     return (proximo - ahora).total_seconds()
 
-
-def _bucle_segundo_plano(scrapers):
+def _bucle_segundo_plano(scrapers, intervalo_segundos=None):
     activos = {t: s for t, s in scrapers.items() if s is not None}
     while not BACKGROUND_STATE["detener"].is_set():
-        espera = _segundos_hasta_proximo_12h()
+        espera = intervalo_segundos if intervalo_segundos is not None else _segundos_hasta_proximo_12h()
         if BACKGROUND_STATE["detener"].wait(espera):
             break
-        print("\n[segundo plano] ejecutando revisión programada (disparador: 12h)...")
+        print("\n[segundo plano] ejecutando revisión programada...")
         try:
             scheduler.ejecutar_pasada(activos)
         except Exception as e:
             print(f"[segundo plano] error durante la revisión: {e}")
 
 
-def iniciar_segundo_plano(scrapers):
+def iniciar_segundo_plano(scrapers, intervalo_segundos=None):
     if BACKGROUND_STATE["hilo"] is not None and BACKGROUND_STATE["hilo"].is_alive():
         print("El modo segundo plano ya está activo.")
         return
     BACKGROUND_STATE["detener"].clear()
-    hilo = threading.Thread(target=_bucle_segundo_plano, args=(scrapers,), daemon=True)
+    hilo = threading.Thread(target=_bucle_segundo_plano, args=(scrapers, intervalo_segundos), daemon=True)
     BACKGROUND_STATE["hilo"] = hilo
     hilo.start()
-    print("Modo segundo plano iniciado (disparador activo: cada 12h desde medianoche). "
-          "'al volver del reposo' y 'antes de apagar' aún no están implementados.")
-
+    if intervalo_segundos is not None:
+        print(f"Modo segundo plano iniciado en modo DEBUG (intervalo fijo: {intervalo_segundos}s).")
+    else:
+        print("Modo segundo plano iniciado (disparador activo: cada 12h desde medianoche). " "'al volver del reposo' y 'antes de apagar' aún no están implementados.")
 
 def detener_segundo_plano():
     if BACKGROUND_STATE["hilo"] is None or not BACKGROUND_STATE["hilo"].is_alive():
@@ -490,7 +531,6 @@ def detener_segundo_plano():
         return
     BACKGROUND_STATE["detener"].set()
     print("Deteniendo modo segundo plano...")
-
 
 # --- loop principal ---
 
@@ -500,16 +540,13 @@ def main():
     scrapers = _cargar_scrapers()
     config_usuario = _leer_config_usuario()
     disparadores = config_usuario.get("segundo_plano_config", {}).get("disparadores", {})
-
     if disparadores.get("al_iniciar_programa"):
         print("[main] disparador 'al iniciar' activo: ejecutando una revisión ahora...")
         activos = {t: s for t, s in scrapers.items() if s is not None}
         if activos:
             scheduler.ejecutar_pasada(activos)
-
     if config_usuario.get("segundo_plano_config", {}).get("activado"):
         iniciar_segundo_plano(scrapers)
-
     while True:
         try:
             linea = input("\n> ").strip()
@@ -532,7 +569,6 @@ def main():
             continue
         if salir:
             break
-
 
 if __name__ == "__main__":
     main()

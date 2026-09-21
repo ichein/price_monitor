@@ -27,5 +27,34 @@
                 "fecha_hora": "ISO 8601"
             }
         }
+    },
+    "steam:2379780": {
+        "tienda": "steam",
+        "nombre_producto": "Balatro",
+        "id_producto": "2379780",
+        "id_producto_interno": "2379780",
+        "historial": [
+            {
+                "fecha": "21/09/2026",
+                "hora": "00:10:40",
+                "fecha_hora": "2026-09-21T00:10:40-06:00",
+                "estado": "disponible",
+                "oferta": false,
+                "precio": 178.99,
+                "descuento": 0,
+                "moneda": "MXN"
+            }
+        ],
+        "precio_historico": {
+            "moneda": "MXN",
+            "historico_bajo": {
+                "precio": 178.99,
+                "fecha_hora": "2026-09-21T00:10:40-06:00"
+            },
+            "historico_alto": {
+                "precio": 178.99,
+                "fecha_hora": "2026-09-21T00:10:40-06:00"
+            }
+        }
     }
 }

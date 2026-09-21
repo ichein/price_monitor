@@ -8,5 +8,15 @@
         "peso": 0,
         "activado": false,
         "favorito": false
+    },
+    "steam:2379780": {
+        "tienda": "steam",
+        "nombre_producto": "2379780",
+        "id_producto": "2379780",
+        "id_producto_interno": "2379780",
+        "umbral_aviso": null,
+        "peso": 2,
+        "activado": true,
+        "favorito": false
     }
 }

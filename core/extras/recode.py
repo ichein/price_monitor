@@ -223,3 +223,57 @@ def limpiar_datos(confirmar: bool = False):
         if directorio_cache.is_dir():
             shutil.rmtree(directorio_cache)
     print("Datos y cache de Python limpiados correctamente.")
+
+def guardar_config_directo(campo: str, valores: dict) -> Optional[dict]:
+    """Como modificar_json, pero para llamadores no interactivos (la GUI):
+    recibe los valores ya escritos por el usuario en vez de pedirlos por
+    input_con_timeout. Valida igual con convertir_valor_config."""
+    try:
+        with open(RUTA_USER_DATA, "r", encoding="utf-8") as archivo:
+            config = json.load(archivo)
+    except FileNotFoundError:
+        print(f"error de sistema: no existe {RUTA_USER_DATA}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"error de sistema: user_data.json no es un JSON válido ({e})")
+        return None
+    if campo not in config:
+        print(f"error de sistema: la sección '{campo}' no existe en user_data.json")
+        return None
+    claves_invalidas = [k for k in valores if k not in config[campo]]
+    if claves_invalidas:
+        print(f"error de sistema: claves no reconocidas en '{campo}': {claves_invalidas}")
+        return None
+    convertidos = {}
+    for llave, valor in valores.items():
+        try:
+            convertidos[llave] = convertir_valor_config(llave, valor)
+        except ValueError as e:
+            print(f"Valor no válido para '{llave}': {e}")
+            return None
+    config[campo].update(convertidos)
+    activador = ACTIVADORES.get(campo)
+    if activador is not None:
+        datos = [k for k in config[campo] if k != activador]
+        if all(valor_config_valido(k, config[campo][k]) for k in datos):
+            config[campo][activador] = True
+    with open(RUTA_USER_DATA, "w", encoding="utf-8") as archivo:
+        json.dump(config, archivo, indent=4, ensure_ascii=False)
+    return convertidos
+
+
+def actualizar_seccion(ruta: Path, campo: str, valores: dict) -> bool:
+    """Escribe valores directo en una sección de un JSON, sin las
+    validaciones de credenciales (para secciones como popup_config o
+    segundo_plano_config, editadas desde la GUI)."""
+    try:
+        datos = _cargar_json(ruta)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"error de sistema: no se pudo leer {ruta} ({e})")
+        return False
+    if campo not in datos:
+        print(f"error de sistema: la sección '{campo}' no existe en {ruta}")
+        return False
+    datos[campo].update(valores)
+    _guardar_json(ruta, datos)
+    return True

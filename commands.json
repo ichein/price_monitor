@@ -9,6 +9,39 @@
         "Resolución de <nombre_o_id> en comandos que operan sobre un producto ya agregado: se hace una búsqueda parcial (coincidencia de substring, sin distinguir mayúsculas/acentos) sobre nombre_producto, id_producto e id_producto_interno dentro de la tienda indicada. Si hay una sola coincidencia, se usa directo. Si hay dos o más, el comando no se ejecuta: se listan los productos coincidentes con su nombre e id exactos, y el usuario debe volver a lanzar el comando escribiendo el nombre o id exacto de uno de ellos. Si no hay ninguna coincidencia, se informa que el producto no está en la watchlist."
     ],
     "comandos": {
+        "debug_popup": {
+            "sintaxis": "debug_popup [N]",
+            "descripcion": "Muestra N popups de prueba para comprobar el sistema visual de notificaciones sin depender del estado real de la watchlist.",
+            "argumentos": {
+                "N": "Número de popups a abrir. Por defecto 1."
+            },
+            "ejemplos": [
+                "debug_popup",
+                "debug_popup 5"
+            ]
+        },
+        "debug_segundo_plano": {
+            "sintaxis": "debug_segundo_plano [segundos]",
+            "descripcion": "Inicia el segundo plano en modo depuración con un intervalo fijo de N segundos para probar el bucle sin esperar a los 12h reales.",
+            "argumentos": {
+                "segundos": "Intervalo del bucle en segundos. Por defecto 30."
+            },
+            "ejemplos": [
+                "debug_segundo_plano",
+                "debug_segundo_plano 10"
+            ]
+        },
+        "debug_scraper": {
+            "sintaxis": "debug_scraper <tienda>",
+            "descripcion": "Muestra el traceback completo si un scraper falla al importarse, para distinguir un placeholder real de un fallo de código.",
+            "argumentos": {
+                "tienda": "steam | amazon | mercadolibre"
+            },
+            "ejemplos": [
+                "debug_scraper steam",
+                "debug_scraper amazon"
+            ]
+        },
         "agregar": {
             "sintaxis": "agregar <tienda> <nombre_o_id> [--peso N] [--umbral PRECIO]",
             "descripcion": "Agrega un producto a la watchlist. El identificador puede ser el nombre del producto o su id/appid si ya lo conoces.",

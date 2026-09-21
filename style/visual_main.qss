@@ -1,1 +1,79 @@
-hoja de estilos para la interfaz de usuario visual en la v2
+* {
+    font-family: "Arial Black", Arial, sans-serif;
+}
+QWidget {
+    background-color: #F2F0E9;
+    color: #111111;
+}
+QMainWindow {
+    background-color: #F2F0E9;
+}
+QTabWidget::pane {
+    border: 3px solid #111111;
+    background: #FFFFFF;
+    top: -1px;
+}
+QTabBar::tab {
+    background: #FFFFFF;
+    border: 3px solid #111111;
+    border-bottom: none;
+    padding: 8px 18px;
+    margin-right: 4px;
+    font-weight: bold;
+}
+QTabBar::tab:selected {
+    background: #FFE14D;
+}
+QPushButton {
+    background-color: #FFE14D;
+    border: 3px solid #111111;
+    padding: 8px 14px;
+    font-weight: bold;
+}
+QPushButton:hover { background-color: #FFD400; }
+QPushButton:pressed { background-color: #111111; color: #FFE14D; }
+QPushButton:disabled { background-color: #DDDDDD; color: #888888; border-color: #999999; }
+
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit, QPlainTextEdit {
+    background: #FFFFFF;
+    border: 2px solid #111111;
+    padding: 4px;
+}
+QTableWidget, QTreeWidget, QListWidget {
+    background: #FFFFFF;
+    border: 3px solid #111111;
+    gridline-color: #111111;
+}
+QHeaderView::section {
+    background: #111111;
+    color: #FFE14D;
+    border: 1px solid #111111;
+    padding: 4px;
+    font-weight: bold;
+}
+QGroupBox {
+    border: 3px solid #111111;
+    margin-top: 14px;
+    font-weight: bold;
+    padding-top: 10px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 6px;
+    background: #FF5C5C;
+    border: 2px solid #111111;
+}
+QLabel#alerta {
+    background: #FF5C5C;
+    border: 2px solid #111111;
+    padding: 6px;
+    font-weight: bold;
+}
+QLabel#alerta_ok {
+    background: #7CE38B;
+    border: 2px solid #111111;
+    padding: 6px;
+    font-weight: bold;
+}
+QCheckBox { font-weight: bold; }
