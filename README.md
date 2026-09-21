@@ -33,6 +33,7 @@ price_monitor/
 ## Comandos
 
 Sintaxis: `comando argumentos [--opciones]`. Los comandos se definen en `commands.json`.
+Los argumentos con espacios deben escribirse entre comillas. En comandos sobre productos ya agregados, `<nombre_o_id>` acepta coincidencias parciales dentro de la tienda indicada; si hay varias, se debe usar el nombre o ID exacto.
 
 - `agregar`: añade un producto a la watchlist.
 - `quitar`: desactiva un producto sin borrar su historial.
@@ -48,8 +49,32 @@ Sintaxis: `comando argumentos [--opciones]`. Los comandos se definen en `command
 - `limpiar`: elimina las credenciales de notificación.
 - `segundo_plano`: inicia o detiene las revisiones automáticas.
 - `estado`: muestra el estado del scheduler y el presupuesto.
+- `probar_conexion`: prueba la conexión de una o todas las tiendas sin guardar datos.
+- `diagnostico`: revisa los archivos JSON principales sin modificarlos.
 - `ayuda`: muestra la ayuda disponible.
 - `salir`: cierra el programa.
+
+## Datos devueltos por los scrapers
+
+Cada scraper debe implementar `buscar_precio(id_producto)` y devolver un `resultado_precio` definido en `core/store_base.py`.
+
+| Campo | Requisito |
+| --- | --- |
+| `tienda` | Nombre interno de la tienda. |
+| `id_producto` | Identificador recibido por el scraper. Puede ser `None`. |
+| `id_producto_interno` | ID estable usado para guardar el historial. |
+| `titulo` | Nombre del producto. |
+| `precio_actual` | Precio numérico o `None` si no está disponible. |
+| `precio_original` | Precio anterior al descuento o `None`. |
+| `divisa` | Código de moneda, por ejemplo `MXN` o `USD`. |
+| `oferta` | `True` si existe descuento. |
+| `descuento` | Porcentaje numérico o `None`. |
+| `url` | URL del producto. |
+| `timestamp` | Fecha ISO 8601 con zona horaria. |
+| `estado` | `DISPONIBLE`, `AGOTADO`, `SIN_PRECIO_REGION` o `NO_ENCONTRADO`. |
+| `precio_anterior` | Precio previo conocido o `None`. |
+
+Los campos deben conservar estos nombres y tipos. Para estados sin precio, `precio_actual` debe ser `None`.
 
 ## Checklist
 
@@ -58,6 +83,7 @@ Sintaxis: `comando argumentos [--opciones]`. Los comandos se definen en `command
 - [x] `core/storage.py`
 - [x] `core/notifier.py`
 - [x] `core/extras/recode.py`
+- [x] Contrato `resultado_precio` para scrapers
 - [x] `stores/steam.py`
 - [ ] `stores/amazon.py`
 - [ ] `stores/mercadolibre.py`
@@ -72,5 +98,5 @@ Sintaxis: `comando argumentos [--opciones]`. Los comandos se definen en `command
 - [ ] `main.py`
 - [x] `commands.json`
 - [x] `store_config.json`
-- [ ] `README.md`
+- [x] `README.md`
 
