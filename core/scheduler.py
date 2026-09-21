@@ -179,7 +179,9 @@ def ejecutar_pasada(scrapers: dict) -> dict:
                 continue
             precio_anterior = obtener_ultimo_precio(tienda, resultado.id_producto_interno)
             señales = registrar_resultado(resultado, clave)
-            _actualizar_estado_producto(estado, clave, est_producto, resultado, precio_anterior)
+            _actualizar_estado_producto(
+                estado, clave, est_producto, resultado, precio_anterior, señales,
+            )
             ahora_iso = datetime.now().astimezone().isoformat(timespec="seconds")
             seccion_tienda["ultima_peticion"] = ahora_iso
             seccion_tienda["peticiones_usadas_hoy"] += 1

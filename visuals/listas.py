@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
 
 from core import storage
 from core.extras.recode import RAIZ_PROYECTO
+from core.extras.tema import generar_qss_main, registrar_ventana
 
 QSS_PATH = RAIZ_PROYECTO / "style" / "visual_main.qss"
 
@@ -216,11 +217,8 @@ class VentanaListas(QMainWindow):
         self.setWindowTitle("price_monitor — Vigilados")
         self.resize(900, 650)
         self.setCentralWidget(TabVigilados())
-        try:
-            with open(QSS_PATH, "r", encoding="utf-8") as archivo:
-                self.setStyleSheet(archivo.read())
-        except FileNotFoundError:
-            pass
+        self.setStyleSheet(generar_qss_main())
+        registrar_ventana(self)
 
 
 def iniciar_ventana_listas():

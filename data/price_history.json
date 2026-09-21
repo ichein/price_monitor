@@ -43,6 +43,36 @@
                 "precio": 178.99,
                 "descuento": 0,
                 "moneda": "MXN"
+            },
+            {
+                "fecha": "21/09/2026",
+                "hora": "00:45:07",
+                "fecha_hora": "2026-09-21T00:45:07-06:00",
+                "estado": "disponible",
+                "oferta": false,
+                "precio": 178.99,
+                "descuento": 0,
+                "moneda": "MXN"
+            },
+            {
+                "fecha": "21/09/2026",
+                "hora": "00:47:44",
+                "fecha_hora": "2026-09-21T00:47:44-06:00",
+                "estado": "disponible",
+                "oferta": false,
+                "precio": 178.99,
+                "descuento": 0,
+                "moneda": "MXN"
+            },
+            {
+                "fecha": "21/09/2026",
+                "hora": "00:52:09",
+                "fecha_hora": "2026-09-21T00:52:09-06:00",
+                "estado": "disponible",
+                "oferta": false,
+                "precio": 178.99,
+                "descuento": 0,
+                "moneda": "MXN"
             }
         ],
         "precio_historico": {

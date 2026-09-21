@@ -20,6 +20,72 @@ from core.extras.recode import (
     valor_config_valido,
 )
 
+from core.extras.tema import generar_qss_popup
+
+# --- dentro de _get_app(), reemplaza el bloque que abría popup.qss y
+# hacía el .replace() manual de radios por esto: ya NO se construye el
+# estilo aquí, solo se crea la QApplication. El estilo se aplica siempre
+# justo antes de mostrar un popup (ver mostrar_popups más abajo).
+
+def _get_app():
+    global _app, _senales
+    if _app is None:
+        instancia = QApplication.instance()
+        if instancia is None:
+            if threading.current_thread() is not threading.main_thread():
+                raise RuntimeError(
+                    "Los popups necesitan que QApplication se cree en el hilo principal."
+                )
+            instancia = QApplication(sys.argv)
+            instancia.setQuitOnLastWindowClosed(False)
+        _app = instancia
+    if _senales is None:
+        _senales = _Senales()
+        _senales.moveToThread(_app.thread())
+    return _app
+
+
+def mostrar_popups(mensajes: list, esperar: bool = True, forzar: bool = False):
+    """Muestra varios popups apilados."""
+    config = _leer_config().get("popup_config") or {}
+    if not forzar and not config.get("popup_activado", False):
+        return
+    _actualizar_ajustes(config)
+    app = _get_app()
+    app.setStyleSheet(generar_qss_popup(_AJUSTES))  # siempre fresco, según user_data.json
+    if threading.current_thread() is not threading.main_thread():
+        for mensaje in mensajes:
+            _senales.solicitud.emit(mensaje)
+        return
+    for mensaje in mensajes:
+        popup.solicitar(mensaje)
+    if esperar and popup.popups_activos and not _hay_bucle_activo():
+        _esperar_a_que_cierren()
+
+
+def mostrar_popup(mensaje: dict, esperar: bool = True, forzar: bool = False):
+    mostrar_popups([mensaje], esperar=esperar, forzar=forzar)
+
+
+def previsualizar_popup(ajustes: dict, modo: str, esperar: bool = True):
+    """Muestra un popup con ajustes/modo que AÚN NO se han guardado, para
+    que Configuración pueda mostrar el resultado antes de confirmar."""
+    global _AJUSTES
+    respaldo = dict(_AJUSTES)
+    for llave, valor in ajustes.items():
+        if llave in _AJUSTES:
+            _AJUSTES[llave] = _entero(valor, _AJUSTES[llave])
+    app = _get_app()
+    app.setStyleSheet(generar_qss_popup(_AJUSTES, modo=modo))
+    mensaje = {"tipo": "info", "titulo": "Vista previa", "mensaje": "Así se verá el popup de notificación."}
+    popup.solicitar(mensaje)
+    if esperar and popup.popups_activos and not _hay_bucle_activo():
+        _esperar_a_que_cierren()
+    _AJUSTES.clear()
+    _AJUSTES.update(respaldo)
+    # El estilo real se reconstruye solo la próxima vez que se muestre un
+    # popup normal, porque mostrar_popups siempre lo regenera desde
+    # user_data.json — no hace falta restaurarlo aquí manualmente.
 # Ruta del estilo del popup.
 RUTA_ESTILO_POPUP = RAIZ_PROYECTO / "style" / "popup.qss"
 

@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
 
 from core import storage, scheduler, notifier
 from core.extras.recode import RAIZ_PROYECTO
+from core.extras.tema import generar_qss_main, registrar_ventana
 
 from visuals.configuracion import TabConfiguracion
 from visuals.listas import TabVigilados
@@ -155,11 +156,8 @@ class MainWindow(QMainWindow):
         pestañas.addTab(TabVigilados(), "Vigilados")
         self.setCentralWidget(pestañas)
 
-        try:
-            with open(QSS_PATH, "r", encoding="utf-8") as archivo:
-                self.setStyleSheet(archivo.read())
-        except FileNotFoundError:
-            print(f"[visual_main] no se encontró {QSS_PATH}; se usa el estilo por defecto de Qt.")
+        self.setStyleSheet(generar_qss_main())
+        registrar_ventana(self)
 
 
 def iniciar_gui():

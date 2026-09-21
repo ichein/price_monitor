@@ -1,9 +1,37 @@
 {
-    "vuelta_iniciada": null,
+    "vuelta_iniciada": "2026-09-21",
     "global": {
-        "peticiones_usadas_hoy": 0,
-        "ultimo_reset": null
+        "peticiones_usadas_hoy": 2,
+        "ultimo_reset": "2026-09-21T00:47:44-06:00"
     },
-    "tiendas": {},
-    "productos": {}
+    "tiendas": {
+        "steam": {
+            "peticiones_usadas_hoy": 2,
+            "ultimo_reset": "2026-09-21T00:47:44-06:00",
+            "ultima_peticion": "2026-09-21T00:52:09-06:00"
+        },
+        "amazon": {
+            "peticiones_usadas_hoy": 0,
+            "ultimo_reset": "2026-09-21T00:47:44-06:00",
+            "ultima_peticion": null
+        },
+        "mercadolibre": {
+            "peticiones_usadas_hoy": 0,
+            "ultimo_reset": "2026-09-21T00:47:44-06:00",
+            "ultima_peticion": null
+        }
+    },
+    "productos": {
+        "steam:2379780": {
+            "atendido_en_vuelta": false,
+            "pendiente_desde": null,
+            "ultima_atencion": "2026-09-21T00:52:09-06:00",
+            "racha_precio_estable": 2,
+            "consultas_usuario_en_vuelta": 0,
+            "tuvo_pendiente_en_vuelta": false,
+            "_ultimo_estado": "disponible",
+            "_nuevo_extremo_historico": false,
+            "_precio_subio": false
+        }
+    }
 }
