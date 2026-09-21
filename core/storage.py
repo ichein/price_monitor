@@ -64,7 +64,90 @@ PLANTILLA_HISTORIAL = {
     },
 }
 
-# --- helpers propios de este dominio ---
+def _buscar_productos(tienda: str, texto: str) -> list:
+    """Búsqueda parcial (substring, sin mayúsculas/acentos) de productos
+    dentro de una tienda, por nombre, id_producto o id_producto_interno."""
+    productos = cargar_watchlist()
+    texto_norm = _normalizar_texto(texto)
+    tienda_norm = _normalizar_texto(tienda)
+    coincidencias = []
+    for clave, producto in productos.items():
+        if _normalizar_texto(producto.get("tienda", "")) != tienda_norm:
+            continue
+        campos = (
+            producto.get("nombre_producto", ""),
+            producto.get("id_producto", ""),
+            producto.get("id_producto_interno", ""),
+        )
+        if any(texto_norm in _normalizar_texto(c) for c in campos if c):
+            coincidencias.append((clave, producto))
+    return coincidencias
+
+
+def set_activado(clave: str, activado: bool) -> None:
+    productos = cargar_watchlist()
+    if clave in productos:
+        productos[clave]["activado"] = activado
+        guardar_watchlist(productos)
+
+
+def eliminar_producto(clave: str) -> None:
+    """Borra el producto de watchlist Y su historial. Irreversible."""
+    productos = cargar_watchlist()
+    productos.pop(clave, None)
+    guardar_watchlist(productos)
+    historial = cargar_historial()
+    historial.pop(clave, None)
+    guardar_historial(historial)
+
+
+def set_favorito(clave: str, favorito: bool) -> Optional[str]:
+    """Cambia favorito y ajusta el peso +-1 (piso 1 normal / 2 si es
+    favorito). Devuelve un mensaje de error, o None si salió bien."""
+    productos = cargar_watchlist()
+    producto = productos.get(clave)
+    if producto is None:
+        return "producto no encontrado"
+    ya_favorito = producto.get("favorito", False)
+    if favorito == ya_favorito:
+        return None
+    if favorito:
+        producto["peso"] = min(10, producto.get("peso", 1) + 1)
+        producto["favorito"] = True
+    else:
+        producto["peso"] = max(1, producto.get("peso", 2) - 1)
+        producto["favorito"] = False
+    guardar_watchlist(productos)
+    return None
+
+
+def set_peso(clave: str, peso: int) -> Optional[str]:
+    productos = cargar_watchlist()
+    producto = productos.get(clave)
+    if producto is None:
+        return "producto no encontrado"
+    minimo = 2 if producto.get("favorito") else 1
+    if peso != 0 and peso < minimo:
+        return f"el peso mínimo para este producto es {minimo} (favorito: {producto.get('favorito')})"
+    if peso > 10:
+        return "el peso máximo es 10"
+    producto["peso"] = peso
+    guardar_watchlist(productos)
+    return None
+
+
+def set_umbral(clave: str, umbral) -> Optional[str]:
+    productos = cargar_watchlist()
+    producto = productos.get(clave)
+    if producto is None:
+        return "producto no encontrado"
+    try:
+        valor = _normalizar_umbral(umbral)
+    except ValueError as e:
+        return str(e)
+    producto["umbral_aviso"] = valor
+    guardar_watchlist(productos)
+    return None
 
 def _clave(tienda: str, id_interno: str) -> str:
     """Clave compuesta."""
@@ -99,8 +182,7 @@ def _leer_umbral(producto: dict) -> Optional[float]:
     try:
         return _normalizar_umbral(producto.get("umbral_aviso"))
     except ValueError:
-        print(f"[storage] umbral_aviso inválido ({producto.get('umbral_aviso')!r}) en "
-              f"'{producto.get('nombre_producto')}': se ignora.")
+        print(f"[storage] umbral_aviso inválido ({producto.get('umbral_aviso')!r}) en " f"'{producto.get('nombre_producto')}': se ignora.")
         return None
 
 
@@ -127,8 +209,7 @@ def _fusionar_entradas(existente: dict, nueva: dict) -> bool:
     return cambio
 
 
-def agregar_producto(tienda: str, nombre_producto: str, id_producto: str,
-                      peso: int = 0, umbral_aviso: Optional[float] = None) -> str:
+def agregar_producto(tienda: str, nombre_producto: str, id_producto: str, peso: int = 0, umbral_aviso: Optional[float] = None) -> str:
     """Agrega un producto y devuelve su clave."""
     umbral = _normalizar_umbral(umbral_aviso)  # ValueError claro si viene mal
     nuevo = {
@@ -307,7 +388,6 @@ def registrar_resultado(resultado: resultado_precio, clave_watchlist: str) -> di
         and resultado.precio_actual <= umbral_aviso
         and (precio_anterior is None or precio_anterior > umbral_aviso)
     )
-
     return {
         "oferta_nueva": oferta_nueva,
         "cruzo_umbral": cruzo_umbral,

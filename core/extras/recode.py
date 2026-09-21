@@ -199,8 +199,8 @@ def modificar_json(campo: str, llaves: list[str], timeout: int = 10, max_intento
     return valores
 
 
-def limpiar_datos():
-    if not y_or_n("¿Deseas limpiar todos los datos? (Y/N): "):
+def limpiar_datos(confirmar: bool = False):
+    if not confirmar and not y_or_n("¿Deseas limpiar todos los datos? (Y/N): "):
         print("Limpieza cancelada.")
         return
     with open(RUTA_USER_DATA, "r", encoding="utf-8") as archivo:

@@ -5,7 +5,8 @@
         "Los flags opcionales pueden omitirse; se usan valores por defecto.",
         "'quitar' desactiva un producto (deja de recibir revisiones automáticas) sin borrar su historial.",
         "'borrar' elimina el producto de la watchlist Y su historial de precios; es irreversible.",
-        "Marcar un producto como favorito le suma +1 permanente a su peso; su mínimo pasa de 1 a 2 mientras sea favorito."
+        "Marcar un producto como favorito le suma +1 permanente a su peso; su mínimo pasa de 1 a 2 mientras sea favorito.",
+        "Resolución de <nombre_o_id> en comandos que operan sobre un producto ya agregado: se hace una búsqueda parcial (coincidencia de substring, sin distinguir mayúsculas/acentos) sobre nombre_producto, id_producto e id_producto_interno dentro de la tienda indicada. Si hay una sola coincidencia, se usa directo. Si hay dos o más, el comando no se ejecuta: se listan los productos coincidentes con su nombre e id exactos, y el usuario debe volver a lanzar el comando escribiendo el nombre o id exacto de uno de ellos. Si no hay ninguna coincidencia, se informa que el producto no está en la watchlist."
     ],
     "comandos": {
         "agregar": {
@@ -13,7 +14,7 @@
             "descripcion": "Agrega un producto a la watchlist. El identificador puede ser el nombre del producto o su id/appid si ya lo conoces.",
             "argumentos": {
                 "tienda": "steam | amazon | mercadolibre (según lo configurado en store_config.json)",
-                "nombre_o_id": "Nombre a buscar, o id/appid conocido"
+                "nombre_o_id": "Nombre a buscar, o id/appid conocido. Aquí NO aplica la resolución por búsqueda parcial: es la entrada literal que se le pasa al scraper de la tienda."
             },
             "flags": {
                 "--peso": "Entero 1-10. Por defecto 1.",
@@ -27,11 +28,11 @@
         "quitar": {
             "sintaxis": "quitar <tienda> <nombre_o_id>",
             "descripcion": "Desactiva un producto: deja de recibir revisiones automáticas del scheduler, pero conserva su historial y su configuración (peso, umbral, favorito) por si se reactiva después.",
-            "ejemplos": ["quitar steam 730"]
+            "ejemplos": ["quitar steam 730", "quitar steam cs2"]
         },
         "borrar": {
             "sintaxis": "borrar <tienda> <nombre_o_id> [--confirmar]",
-            "descripcion": "Elimina por completo un producto de la watchlist y borra su historial de precios. Es irreversible. Pide confirmación interactiva salvo que se use --confirmar.",
+            "descripcion": "Elimina por completo un producto de la watchlist y borra su historial de precios. Es irreversible. Pide confirmación interactiva (y_or_n) salvo que se use --confirmar.",
             "flags": {
                 "--confirmar": "Omite la pregunta de confirmación (útil para scripts)."
             },
@@ -90,8 +91,8 @@
         },
         "peso": {
             "sintaxis": "peso <tienda> <nombre_o_id> <0-10>",
-            "descripcion": "Cambia manualmente el peso de un producto. Respeta el mínimo vigente (1, o 2 si es favorito). Poner 0 requiere confirmación, ya que saca al producto de la cola automática del scheduler.",
-            "ejemplos": ["peso steam 730 7"]
+            "descripcion": "Cambia manualmente el peso de un producto. Respeta el mínimo vigente (1, o 2 si es favorito). Poner 0 requiere confirmación interactiva (y_or_n), ya que saca al producto de la cola automática del scheduler.",
+            "ejemplos": ["peso steam 730 7", "peso steam 730 0"]
         },
         "umbral": {
             "sintaxis": "umbral <tienda> <nombre_o_id> <precio|off>",
@@ -108,7 +109,7 @@
         },
         "limpiar": {
             "sintaxis": "limpiar [--confirmar]",
-            "descripcion": "Borra las credenciales guardadas de Telegram y correo, y desactiva los popups. No toca watchlist ni historial. Pide confirmación salvo --confirmar.",
+            "descripcion": "Borra las credenciales guardadas de Telegram y correo, y desactiva los popups. No toca watchlist ni historial. Pide confirmación (y_or_n) salvo --confirmar.",
             "ejemplos": ["limpiar"]
         },
         "segundo_plano": {
@@ -126,6 +127,19 @@
                 "estado",
                 "estado --tienda steam"
             ]
+        },
+        "probar_conexion": {
+            "sintaxis": "probar_conexion [tienda]",
+            "descripcion": "Comando de depuración: hace una consulta mínima de prueba (fuera de presupuesto) contra el scraper de una tienda, para confirmar que la conexión funciona antes de agregar productos reales. Sin argumento, prueba todas las tiendas configuradas en store_config.json. Imprime éxito/error por tienda, sin guardar nada en watchlist ni en el historial.",
+            "ejemplos": [
+                "probar_conexion",
+                "probar_conexion steam"
+            ]
+        },
+        "diagnostico": {
+            "sintaxis": "diagnostico",
+            "descripcion": "Comando de depuración: revisa que existan y sean legibles/escribibles los archivos clave del proyecto (watchlist.json, price_history.json, user_data.json, store_config.json, scheduler_state.json) y reporta cuáles faltan o tienen JSON inválido, sin modificarlos.",
+            "ejemplos": ["diagnostico"]
         },
         "ayuda": {
             "sintaxis": "ayuda [comando]",
